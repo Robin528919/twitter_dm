@@ -62,7 +62,7 @@ target_link_libraries(${LIB_NAME}
 # 设置编译选项
 target_compile_options(${LIB_NAME} PRIVATE -Wall -Wextra)
 
-set(BUILD_TESTING 1)
+#set(BUILD_TESTING 1)
 # 添加测试
 if(BUILD_TESTING)
     # googletest
