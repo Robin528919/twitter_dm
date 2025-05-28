@@ -62,12 +62,7 @@ target_link_libraries(${LIB_NAME}
 # 设置编译选项
 target_compile_options(${LIB_NAME} PRIVATE -Wall -Wextra)
 
-# 添加可执行文件 (示例)
-add_executable(example example.cpp)
-
-# 链接示例程序到库 (静态或动态)
-target_link_libraries(example ${LIB_NAME})
-#set(BUILD_TESTING 1)
+set(BUILD_TESTING 1)
 # 添加测试
 if(BUILD_TESTING)
     # googletest
