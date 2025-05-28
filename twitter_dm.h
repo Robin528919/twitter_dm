@@ -71,7 +71,6 @@ namespace twitter_dm {
      * 使用cpr库进行网络请求，支持MultiPerform批量并发处理
      */
     class Twitter {
-    private:
         std::string cookies_; // 账号cookies
         std::shared_ptr<spdlog::logger> logger_; // 日志记录器
         std::string proxy_url_; // 代理服务器URL（可选）
@@ -116,7 +115,7 @@ namespace twitter_dm {
          * @brief 获取客户端UUID
          * @return std::string 客户端UUID
          */
-        static std::string getClientUuid() ;
+        static std::string getClientUuid();
 
         /**
          * @brief 从cookies中获取CSRF token

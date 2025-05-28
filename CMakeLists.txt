@@ -33,44 +33,65 @@ FetchContent_MakeAvailable(cpr)
 # 添加头文件目录
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-# 创建静态库
-add_library(twitter_dm_static STATIC
-        library.cpp
-        twitter_dm.cpp
-)
+# 添加构建选项：构建动态库 (SHARED) 或静态库 (STATIC)
+option(BUILD_SHARED_LIBS "Build shared libraries (.dll/.so) instead of static ones (.a/.lib)" OFF)
+
+# 创建库
+if(BUILD_SHARED_LIBS)
+    message(STATUS "Building shared library")
+    add_library(twitter_dm SHARED
+            twitter_dm.cpp
+    )
+    set_target_properties(twitter_dm PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON) # 适用于Windows MSVC，简化导出
+    set(LIB_NAME twitter_dm)
+else()
+    message(STATUS "Building static library")
+    add_library(twitter_dm_static STATIC
+            twitter_dm.cpp
+    )
+    set(LIB_NAME twitter_dm_static)
+endif()
 
 # 链接依赖库
-target_link_libraries(twitter_dm_static
+target_link_libraries(${LIB_NAME}
         spdlog::spdlog
         nlohmann_json::nlohmann_json
         cpr::cpr
 )
 
 # 设置编译选项
-target_compile_options(twitter_dm_static PRIVATE -Wall -Wextra)
+target_compile_options(${LIB_NAME} PRIVATE -Wall -Wextra)
 
-# 添加示例程序
-add_executable(twitter_dm_example example.cpp)
-target_link_libraries(twitter_dm_example
-        twitter_dm_static
-        spdlog::spdlog
-        nlohmann_json::nlohmann_json
-        cpr::cpr
-)
-set(BUILD_TESTING 1)
-# 添加测试子目录
-if (BUILD_TESTING)
+# 添加可执行文件 (示例)
+add_executable(example example.cpp)
+
+# 链接示例程序到库 (静态或动态)
+target_link_libraries(example ${LIB_NAME})
+#set(BUILD_TESTING 1)
+# 添加测试
+if(BUILD_TESTING)
+    # googletest
+    FetchContent_Declare(
+            googletest
+            GIT_REPOSITORY https://github.com/google/googletest.git
+            GIT_TAG v1.14.0
+    )
+    FetchContent_MakeAvailable(googletest)
+
     enable_testing()
-    add_subdirectory(test)
-endif ()
+    add_executable(twitter_dm_test test/test_twitter_dm.cpp)
+    target_link_libraries(twitter_dm_test ${LIB_NAME} GTest::gtest_main)
+    include(GoogleTest)
+    gtest_discover_tests(twitter_dm_test)
+endif()
 
 # 安装配置
-install(TARGETS twitter_dm_static
+install(TARGETS ${LIB_NAME}
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin
 )
 
-install(FILES twitter_dm.h library.h
+install(FILES twitter_dm.h
         DESTINATION include
 )
