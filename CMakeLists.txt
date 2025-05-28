@@ -1,18 +1,27 @@
 cmake_minimum_required(VERSION 3.16)
 project(twitter_dm_static)
 
-set(CMAKE_CXX_STANDARD 20)
-include_directories(/opt/homebrew/include)
-link_directories(/opt/homebrew/lib)
-# 查找依赖库
-find_package(PkgConfig REQUIRED)
-find_package(spdlog REQUIRED)
-find_package(GTest REQUIRED)
-find_package(nlohmann_json REQUIRED)
+set(CMAKE_CXX_STANDARD 17)
 # 添加cpr依赖
 set(ENV{http_proxy} "http://127.0.0.1:7890")
 set(ENV{https_proxy} "http://127.0.0.1:7890")
 include(FetchContent)
+
+# 添加 spdlog
+FetchContent_Declare(
+        spdlog
+        GIT_REPOSITORY https://github.com/gabime/spdlog.git
+        GIT_TAG v1.12.0
+)
+FetchContent_MakeAvailable(spdlog)
+# 添加 nlohmann_json
+FetchContent_Declare(
+        nlohmann_json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.11.2
+)
+FetchContent_MakeAvailable(nlohmann_json)
+
 FetchContent_Declare(
         cpr
         GIT_REPOSITORY https://github.com/libcpr/cpr.git
@@ -48,23 +57,11 @@ target_link_libraries(twitter_dm_example
         nlohmann_json::nlohmann_json
         cpr::cpr
 )
-
-# 添加测试程序
-if (BUILD_TESTING OR ENABLE_TESTING)
+set(BUILD_TESTING 1)
+# 添加测试子目录
+if (BUILD_TESTING)
     enable_testing()
-
-    add_executable(twitter_dm_test test_twitter_dm.cpp)
-    target_link_libraries(twitter_dm_test
-            twitter_dm_static
-            spdlog::spdlog
-            nlohmann_json::nlohmann_json
-            cpr::cpr
-            GTest::gtest
-            GTest::gtest_main
-    )
-
-    # 添加测试到CTest
-    add_test(NAME TwitterDMTest COMMAND twitter_dm_test)
+    add_subdirectory(test)
 endif ()
 
 # 安装配置
