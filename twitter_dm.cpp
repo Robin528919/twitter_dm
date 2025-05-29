@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <utility>
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include <random>
 
 namespace twitter_dm {
     // Twitter API相关常量
@@ -54,8 +55,8 @@ namespace twitter_dm {
         }
     }
 
-    cpr::Header Twitter::buildHeaders() const {
-        return cpr::Header{
+    cpr::Header Twitter::buildHeaders(const std::string *client_transaction_id) const {
+        cpr::Header headers = {
             {"Host", "x.com"},
             {"Accept-Encoding", "gzip, deflate, br"},
             {"Connection", "keep-alive"},
@@ -69,10 +70,7 @@ namespace twitter_dm {
             {"Sec-Ch-Ua-Arch", "\"arm\""},
             {"Sec-Ch-Ua-Bitness", "\"64\""},
             {"Sec-Ch-Ua-Full-Version", "\"136.0.7103.114\""},
-            {
-                "Sec-Ch-Ua-Full-Version-List",
-                "\"Chromium\";v=\"136.0.7103.114\", \"Google Chrome\";v=\"136.0.7103.114\", \"Not.A/Brand\";v=\"99.0.0.0\""
-            },
+            {"Sec-Ch-Ua-Full-Version-List", "\"Chromium\";v=\"136.0.7103.114\", \"Google Chrome\";v=\"136.0.7103.114\", \"Not.A/Brand\";v=\"99.0.0.0\""},
             {"Sec-Ch-Ua-Mobile", "?0"},
             {"Sec-Ch-Ua-Model", "\"\""},
             {"Sec-Ch-Ua-Platform", "\"macOS\""},
@@ -80,21 +78,21 @@ namespace twitter_dm {
             {"Sec-Fetch-Dest", "empty"},
             {"Sec-Fetch-Mode", "cors"},
             {"Sec-Fetch-Site", "same-origin"},
-            {
-                "User-Agent",
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
-            },
+            {"User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"},
             {"X-Twitter-Client-Language", "en"},
             {"X-Client-Uuid", getClientUuid()},
-            {"X-Client-Transaction-Id", getClientTransactionId()},
             {"X-Csrf-Token", getCsrfToken()},
-            {
-                "Authorization",
-                "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA"
-            },
+            {"Authorization", "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA"},
             {"Content-Type", "application/json"},
             {"Cookie", cookies_}
         };
+        // 设置X-Client-Transaction-Id
+        if (client_transaction_id) {
+            headers["X-Client-Transaction-Id"] = *client_transaction_id;
+        } else {
+            headers["X-Client-Transaction-Id"] = getClientTransactionId();
+        }
+        return headers;
     }
 
     std::string Twitter::getUserId() const {
@@ -109,10 +107,31 @@ namespace twitter_dm {
         return "1234567890"; // 临时默认值，实际使用时需要正确实现
     }
 
+    /**
+     * @brief 获取客户端UUID，使用C++标准库随机生成UUID
+     * @return std::string 随机生成的UUID字符串
+     * @exception 无异常抛出
+     */
     std::string Twitter::getClientUuid() {
-        // 生成或从配置中获取客户端UUID
-        // 这里使用固定值，实际应用中应该生成唯一的UUID
-        return "e22ab3fb-20cd-49fb-9592-ef1f45a3760d";
+        // 生成随机UUID
+        static constexpr char hex_chars[] = "0123456789abcdef";
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> dis(0, 15);
+        std::string uuid = std::string(36, ' ');
+        int hyphen_pos[] = {8, 13, 18, 23};
+        int hyphen_idx = 0;
+        for (int i = 0; i < 36; ++i) {
+            if (hyphen_idx < 4 && i == hyphen_pos[hyphen_idx]) {
+                uuid[i] = '-';
+                ++hyphen_idx;
+            } else {
+                uuid[i] = hex_chars[dis(gen)];
+            }
+        }
+        uuid[14] = '4'; // UUID version 4
+        uuid[19] = hex_chars[(dis(gen) & 0x3) | 0x8]; // UUID variant
+        return uuid;
     }
 
     std::string Twitter::getCsrfToken() const {
@@ -258,7 +277,8 @@ namespace twitter_dm {
     }
 
     BatchDMResult Twitter::sendBatchDirectMessages(const std::vector<std::string> &user_ids,
-                                                           const std::string &message) {
+                                                           const std::string &message,
+                                                           const std::vector<std::string> *client_transaction_ids) {
         // 参数验证
         if (user_ids.empty()) {
             throw std::invalid_argument("用户ID列表不能为空");
@@ -269,28 +289,19 @@ namespace twitter_dm {
         if (message.length() > 10000) {
             throw std::invalid_argument("消息内容过长，最大支持10000字符");
         }
-
+        if (client_transaction_ids && client_transaction_ids->size() != user_ids.size()) {
+            throw std::invalid_argument("client_transaction_ids数量必须与user_ids一致");
+        }
         logger_->info("开始批量发送私信，目标用户数量: {}", user_ids.size());
-
         std::vector<DMResult> results;
         results.reserve(user_ids.size());
-
         try {
-            // 使用cpr::MultiPerform进行批量并发请求
             cpr::MultiPerform multi_perform;
             std::vector<std::shared_ptr<cpr::Session> > sessions;
             sessions.reserve(user_ids.size());
-
-            // 构建所有请求会话
-            auto headers = buildHeaders();
             std::string url = "https://x.com/i/api/1.1/dm/new2.json";
-
-            // 构建URL查询参数
             cpr::Parameters params = cpr::Parameters{
-                {
-                    "ext",
-                    "mediaColor,altText,mediaStats,highlightedLabel,voiceInfo,birdwatchPivot,superFollowMetadata,unmentionInfo,editControl,article"
-                },
+                {"ext", "mediaColor,altText,mediaStats,highlightedLabel,voiceInfo,birdwatchPivot,superFollowMetadata,unmentionInfo,editControl,article"},
                 {"include_ext_alt_text", "true"},
                 {"include_ext_limited_action_results", "true"},
                 {"include_reply_count", "1"},
@@ -302,53 +313,47 @@ namespace twitter_dm {
                 {"supports_reactions", "true"},
                 {"supports_edit", "true"}
             };
-
+            size_t idx = 0;
             for (const auto &user_id: user_ids) {
                 if (user_id.empty()) {
                     logger_->warn("跳过空的用户ID");
                     results.emplace_back(false, user_id, message, "用户ID为空", 0);
+                    ++idx;
                     continue;
                 }
-
+                std::string client_tid;
+                if (client_transaction_ids) {
+                    client_tid = (*client_transaction_ids)[idx];
+                }
                 auto session = std::make_shared<cpr::Session>();
                 session->SetUrl(cpr::Url{url});
-                session->SetHeader(headers);
+                session->SetHeader(buildHeaders(client_transaction_ids ? &client_tid : nullptr));
                 session->SetParameters(params);
                 session->SetBody(cpr::Body{buildRequestBody(user_id, message).dump()});
                 session->SetTimeout(cpr::Timeout{REQUEST_TIMEOUT_MS});
                 session->SetVerifySsl(false);
-                
-                // 如果设置了代理，则使用代理
                 if (!proxy_url_.empty()) {
                     session->SetProxies(cpr::Proxies{
                         {"http", proxy_url_},
                         {"https", proxy_url_}
                     });
                 }
-
                 sessions.push_back(session);
                 multi_perform.AddSession(session);
+                ++idx;
             }
-
             logger_->info("准备发送{}个并发请求", sessions.size());
-
-            // 执行批量请求
             auto responses = multi_perform.Post();
-
-            // 处理响应结果
             size_t session_index = 0;
             for (const auto & user_id : user_ids) {
                 if (user_id.empty()) {
-                    // 跳过空用户ID，结果已经在上面添加了
                     continue;
                 }
-
                 if (session_index < responses.size()) {
                     auto result = parseResponse(responses[session_index], user_id, message);
                     results.push_back(result);
                     session_index++;
                 } else {
-                    // 如果响应数量不匹配，添加错误结果
                     results.emplace_back(false, user_id, message, "请求响应不匹配", 0);
                     logger_->error("用户{}的请求响应不匹配", user_id);
                 }
@@ -358,8 +363,6 @@ namespace twitter_dm {
             logger_->error(error_msg);
             throw std::runtime_error(error_msg);
         }
-
-        // 统计成功和失败的数量
         int success_count = 0;
         int failure_count = 0;
         for (const auto& res : results) {

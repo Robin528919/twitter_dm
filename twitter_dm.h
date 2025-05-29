@@ -83,9 +83,10 @@ namespace twitter_dm {
 
         /**
          * @brief 构建私信发送的请求头
+         * @param client_transaction_id 可选参数，指定X-Client-Transaction-Id
          * @return cpr::Header 请求头对象
          */
-        [[nodiscard]] cpr::Header buildHeaders() const;
+        [[nodiscard]] cpr::Header buildHeaders(const std::string *client_transaction_id = nullptr) const;
 
         /**
          * @brief 构建私信发送的请求体
@@ -167,12 +168,14 @@ namespace twitter_dm {
          * @brief 批量发送私信（并发执行）
          * @param user_ids 目标用户ID列表
          * @param message 消息内容
+         * @param client_transaction_ids 可选参数，客户端事务ID列表，数量需与user_ids一致
          * @return std::vector<DMResult> 所有发送结果的列表
          * @throws std::invalid_argument 当参数无效时抛出异常
          * @throws std::runtime_error 当批量请求失败时抛出异常
          */
         BatchDMResult sendBatchDirectMessages(const std::vector<std::string> &user_ids,
-                                              const std::string &message);
+                                              const std::string &message,
+                                              const std::vector<std::string> *client_transaction_ids = nullptr);
 
         /**
          * @brief 设置日志级别
