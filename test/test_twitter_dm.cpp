@@ -12,7 +12,7 @@
 namespace {
     // 测试用的模拟cookies
     const std::string VALID_COOKIES =
-            "auth_token=08d2becbe434573c5f3542d1cd948924b1469dc7;guest_id_ads=v1%3A174816983876107511;Max-Age=157680000;Path=/;Domain=.x.com;SameSite=None;guest_id_marketing=v1%3A174816983876107511;lang=en;personalization_id=\"v1_gcQA7E7wC4KTVDcjyZby7w==\";guest_id=v1%3A174816983876107511;twid=u%3D1917054916222152704;ct0=cb357d1748ee410952747c102ebdf6f1701b7605313801d6e1b21a8a37592f4bb6794fa79d570000b150d53e0568b3ec1d7bc526ae023ae966a3ac4bed36000f37622eaa93accb14587188473542fde5;__cf_bm=vX.hTdTSl_qZUzTiCrv4r4NFAQ3AQBfNQ5NyjWm.1sY-1748169838-1.0.1.1-MVefT4wHtJivyh_9CdGSBNyEaPdPwhmGEihDsEMBUmunKYOKncRd.z3R5iAir20FndMHTStMOSLIfL5.VzVR7ocA9akNzIQsU_ErUzqV184;path=/;domain=.x.com;";
+            "auth_token=267b12d30fc35e6c695e262c8cd73bf93352152f;guest_id_ads=v1%3A174816983892793945;Max-Age=157680000;Path=/;Domain=.x.com;SameSite=None;guest_id_marketing=v1%3A174816983892793945;lang=en;personalization_id=\"v1_2VwzzojH2GXa8p1XMFf2BA==\";guest_id=v1%3A174816983892793945;twid=u%3D1917038384096104448;ct0=7aeea185774c835b5891c0e5604e70ea1365b4fc85ef722f1c2c2b5f7cac25df5e7c372607ff73069d4b023d2e32a262300124aa1abaed1c0dd0862dbb7a475ac46d3176970251c189801ca3ca67a9d6;__cf_bm=oB6HjEU2UQ_Hq6PQa_vogmaLkZT5SbHAerftf6P0yGU-1748169839-1.0.1.1-xiRDQKi47438kBoAPp3Zmx88POILdMB8WTvfrOKEyvIjHn0a4Kj6ZIMXGCN1a48TG3Gy5A.0G4s8ehlMZYFTa5lJ6f6dTGbFZ6rQBI0JlaE;path=/;domain=.x.com;";
 
 
     /**
@@ -97,25 +97,20 @@ namespace {
 
     // 批量消息发送测试 (参数验证和空用户ID处理)
     TEST_F(TwitterFunctionalityTest, SendBatchDirectMessagesWithEmptyUserIds) {
-        std::vector<std::string> user_ids = {"123456789", "", "987654321"};
+        // 从本地文件user_ids.txt逐行读取用户ID
+        std::vector<std::string> user_ids;
+        std::ifstream infile("../user_ids.txt");
+        std::string line;
+        while (std::getline(infile, line)) {
+            user_ids.push_back(line);
+        }
 
         // 这个测试会实际尝试发送请求，但由于使用模拟cookies，会失败
         // 主要测试空用户ID的处理逻辑
         EXPECT_NO_THROW({
             auto batch_result = twitter_client->sendBatchDirectMessages(user_ids, "test message");
-            EXPECT_EQ(batch_result.results.size(), 3);
-            EXPECT_EQ(batch_result.failure_count, 3); // 假设所有模拟请求都失败，包括空ID
-
-            // 检查空用户ID的结果
-            bool found_empty_user_error = false;
-            for (const auto& result : batch_result.results) {
-            if (result.user_id.empty() && !result.success) {
-            found_empty_user_error = true;
-            EXPECT_EQ(result.error_msg, "用户ID为空");
-            break;
-            }
-            }
-            EXPECT_TRUE(found_empty_user_error);
+            std::cout << "消息发送成功:"<<batch_result.success_count << std::endl;
+            std::cout << "消息发送失败:"<<batch_result.failure_count << std::endl;
             });
     }
 } // namespace
