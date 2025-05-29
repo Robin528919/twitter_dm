@@ -44,7 +44,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE twitter_dm_lib)
 
 install(TARGETS ${PROJECT_NAME} twitter_dm_lib DESTINATION .)
 
-set(BUILD_TESTING 1)
 # 添加测试
 if(BUILD_TESTING)
     # 添加头文件目录，确保测试子目录可以访问
