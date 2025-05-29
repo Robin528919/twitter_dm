@@ -49,7 +49,17 @@ twitter-dm-static/
 
 ### 1. 安装依赖
 
-本项目使用CMake的`FetchContent`来管理大部分C++依赖（如spdlog, nlohmann-json, cpr, googletest, pybind11），因此通常不需要手动安装这些库。
+本项目使用CMake的`FetchContent`来管理大部分C++依赖（如spdlog, nlohmann-json, cpr, googletest），因此通常不需要手动安装这些库。
+
+对于 `pybind11`，请手动下载并放置到 `extern` 目录中：
+
+```bash
+# 下载 pybind11
+mkdir extern && cd extern
+# 使用 git 克隆 pybind11
+git clone https://github.com/pybind/pybind11.git
+```
+
 
 您需要确保您的系统已安装：
 
