@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.10)
+cmake_policy(SET CMP0148 NEW)
 project(twitter_dm_static)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -30,63 +31,10 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(cpr)
 
 
-# 添加头文件目录
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+add_subdirectory(extern/pybind11)
+set(LIB_NAME twitter_dm)
 
-# 添加构建选项：构建动态库 (SHARED) 或静态库 (STATIC)
-option(BUILD_SHARED_LIBS "Build shared libraries (.dll/.so) instead of static ones (.a/.lib)" OFF)
+pybind11_add_module(${LIB_NAME} bindings.cpp twitter_dm.cpp)
+target_link_libraries(${LIB_NAME} PRIVATE cpr::cpr nlohmann_json::nlohmann_json spdlog::spdlog)
 
-# 创建库
-if(BUILD_SHARED_LIBS)
-    message(STATUS "Building shared library")
-    add_library(twitter_dm SHARED
-            twitter_dm.cpp
-    )
-    set_target_properties(twitter_dm PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON) # 适用于Windows MSVC，简化导出
-    set(LIB_NAME twitter_dm)
-else()
-    message(STATUS "Building static library")
-    add_library(twitter_dm_static STATIC
-            twitter_dm.cpp
-    )
-    set(LIB_NAME twitter_dm_static)
-endif()
-
-# 链接依赖库
-target_link_libraries(${LIB_NAME}
-        spdlog::spdlog
-        nlohmann_json::nlohmann_json
-        cpr::cpr
-)
-
-# 设置编译选项
-target_compile_options(${LIB_NAME} PRIVATE -Wall -Wextra)
-
-#set(BUILD_TESTING 1)
-# 添加测试
-if(BUILD_TESTING)
-    # googletest
-    FetchContent_Declare(
-            googletest
-            GIT_REPOSITORY https://github.com/google/googletest.git
-            GIT_TAG v1.14.0
-    )
-    FetchContent_MakeAvailable(googletest)
-
-    enable_testing()
-    add_executable(twitter_dm_test test/test_twitter_dm.cpp)
-    target_link_libraries(twitter_dm_test ${LIB_NAME} GTest::gtest_main)
-    include(GoogleTest)
-    gtest_discover_tests(twitter_dm_test)
-endif()
-
-# 安装配置
-install(TARGETS ${LIB_NAME}
-        ARCHIVE DESTINATION lib
-        LIBRARY DESTINATION lib
-        RUNTIME DESTINATION bin
-)
-
-install(FILES twitter_dm.h
-        DESTINATION include
-)
+install(TARGETS ${LIB_NAME} DESTINATION .)

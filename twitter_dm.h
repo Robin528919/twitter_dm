@@ -85,7 +85,7 @@ namespace twitter_dm {
          * @brief 构建私信发送的请求头
          * @return cpr::Header 请求头对象
          */
-        cpr::Header buildHeaders() const;
+        [[nodiscard]] cpr::Header buildHeaders() const;
 
         /**
          * @brief 构建私信发送的请求体
@@ -93,7 +93,7 @@ namespace twitter_dm {
          * @param message 消息内容
          * @return nlohmann::json 请求体JSON对象
          */
-        nlohmann::json buildRequestBody(const std::string &user_id, const std::string &message) const;
+        [[nodiscard]] nlohmann::json buildRequestBody(const std::string &user_id, const std::string &message) const;
 
         /**
          * @brief 解析API响应结果
@@ -102,14 +102,14 @@ namespace twitter_dm {
          * @param message 发送的消息
          * @return DMResult 发送结果
          */
-        DMResult parseResponse(const cpr::Response &response, const std::string &user_id,
+        [[nodiscard]] DMResult parseResponse(const cpr::Response &response, const std::string &user_id,
                                const std::string &message) const;
 
         /**
          * @brief 从cookies中获取当前用户ID
          * @return std::string 当前用户ID
          */
-        std::string getUserId() const;
+        [[nodiscard]] std::string getUserId() const;
 
         /**
          * @brief 获取客户端UUID
@@ -121,13 +121,13 @@ namespace twitter_dm {
          * @brief 从cookies中获取CSRF token
          * @return std::string CSRF token
          */
-        std::string getCsrfToken() const;
+        [[nodiscard]] std::string getCsrfToken() const;
 
         /**
          * @brief 获取客户端事务ID
          * @return std::string 客户端事务ID
          */
-        std::string getClientTransactionId() const;
+        [[nodiscard]] std::string getClientTransactionId() const;
 
     public:
         /**
@@ -184,13 +184,13 @@ namespace twitter_dm {
          * @brief 获取当前cookies
          * @return const std::string& cookies字符串的常量引用
          */
-        const std::string &getCookies() const { return cookies_; }
+        [[nodiscard]] const std::string &getCookies() const { return cookies_; }
 
         /**
          * @brief 验证cookies是否有效
          * @return bool 是否有效
          */
-        bool validateCookies() const;
+        [[nodiscard]] bool validateCookies() const;
     };
 } // namespace twitter_dm
 
