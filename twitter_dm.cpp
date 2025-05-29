@@ -70,7 +70,10 @@ namespace twitter_dm {
             {"Sec-Ch-Ua-Arch", "\"arm\""},
             {"Sec-Ch-Ua-Bitness", "\"64\""},
             {"Sec-Ch-Ua-Full-Version", "\"136.0.7103.114\""},
-            {"Sec-Ch-Ua-Full-Version-List", "\"Chromium\";v=\"136.0.7103.114\", \"Google Chrome\";v=\"136.0.7103.114\", \"Not.A/Brand\";v=\"99.0.0.0\""},
+            {
+                "Sec-Ch-Ua-Full-Version-List",
+                "\"Chromium\";v=\"136.0.7103.114\", \"Google Chrome\";v=\"136.0.7103.114\", \"Not.A/Brand\";v=\"99.0.0.0\""
+            },
             {"Sec-Ch-Ua-Mobile", "?0"},
             {"Sec-Ch-Ua-Model", "\"\""},
             {"Sec-Ch-Ua-Platform", "\"macOS\""},
@@ -78,11 +81,17 @@ namespace twitter_dm {
             {"Sec-Fetch-Dest", "empty"},
             {"Sec-Fetch-Mode", "cors"},
             {"Sec-Fetch-Site", "same-origin"},
-            {"User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"},
+            {
+                "User-Agent",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
+            },
             {"X-Twitter-Client-Language", "en"},
-            {"X-Client-Uuid", getClientUuid()},
+            {"X-Client-Uuid", Twitter::getClientUuid()},
             {"X-Csrf-Token", getCsrfToken()},
-            {"Authorization", "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA"},
+            {
+                "Authorization",
+                "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA"
+            },
             {"Content-Type", "application/json"},
             {"Cookie", cookies_}
         };
@@ -97,13 +106,18 @@ namespace twitter_dm {
 
     std::string Twitter::getUserId() const {
         // 从cookies中提取用户ID（通常在twid字段中）
-        // 修正正则表达式以正确匹配URL编码的用户ID
-        std::regex user_id_regex(R"(twid=u%3D([^;\s]+))");
-        std::smatch match;
+        // 修正正则表达式以兼容 twid="u=..." 和 twid=u%3D... 两种格式
+        // 正则表达式，用于匹配两种格式的twid:
+        // 1. twid=u%3D<user_id> (URL编码格式)
+        // 2. twid="u=<user_id>" (带引号格式)
+        // 3. twid=u=<user_id> (不带引号但直接是u=的格式)
+        std::regex user_id_regex(R"(twid=(?:u%3D|"?u=)([^";\s]+))");
+        std::smatch match; // 用于存储正则匹配结果
         if (std::regex_search(cookies_, match, user_id_regex)) {
-            return match[1].str();
+            return match[1].str(); // 返回匹配到的用户ID (捕获组1)
         }
-        // 如果无法从cookies提取，返回默认值或通过其他方式获取
+        // 如果无法从cookies提取，记录警告并返回默认值或通过其他方式获取
+        logger_->warn("无法从cookies中提取用户ID，将使用默认值或尝试其他方法");
         return "1234567890"; // 临时默认值，实际使用时需要正确实现
     }
 
@@ -113,6 +127,7 @@ namespace twitter_dm {
      * @exception 无异常抛出
      */
     std::string Twitter::getClientUuid() {
+        // Static method, no const qualifier needed here.
         // 生成随机UUID
         static constexpr char hex_chars[] = "0123456789abcdef";
         std::random_device rd;
@@ -159,7 +174,7 @@ namespace twitter_dm {
         std::string current_user_id = getUserId();
         body["conversation_id"] = user_id + "-" + current_user_id;
         body["recipient_ids"] = false;
-        body["request_id"] = "25531fc5-7d77-42d7-9ce2-b659e37e2087"; // 使用UUID格式
+        body["request_id"] = getClientUuid(); // 使用UUID格式
         body["text"] = message;
         body["include_cards"] = 0;
         body["include_quote_count"] = false;
@@ -174,6 +189,8 @@ namespace twitter_dm {
 
         try {
             if (response.status_code == 200) {
+                logger_->debug("响应状态码: {}", response.status_code);
+                logger_->debug("响应结果: {}", response.text);
                 // 解析响应JSON
                 auto json_response = nlohmann::json::parse(response.text);
 
@@ -277,8 +294,8 @@ namespace twitter_dm {
     }
 
     BatchDMResult Twitter::sendBatchDirectMessages(const std::vector<std::string> &user_ids,
-                                                           const std::string &message,
-                                                           const std::vector<std::string> *client_transaction_ids) {
+                                                   const std::string &message,
+                                                   const std::vector<std::string> *client_transaction_ids) {
         // 参数验证
         if (user_ids.empty()) {
             throw std::invalid_argument("用户ID列表不能为空");
@@ -301,7 +318,10 @@ namespace twitter_dm {
             sessions.reserve(user_ids.size());
             std::string url = "https://x.com/i/api/1.1/dm/new2.json";
             cpr::Parameters params = cpr::Parameters{
-                {"ext", "mediaColor,altText,mediaStats,highlightedLabel,voiceInfo,birdwatchPivot,superFollowMetadata,unmentionInfo,editControl,article"},
+                {
+                    "ext",
+                    "mediaColor,altText,mediaStats,highlightedLabel,voiceInfo,birdwatchPivot,superFollowMetadata,unmentionInfo,editControl,article"
+                },
                 {"include_ext_alt_text", "true"},
                 {"include_ext_limited_action_results", "true"},
                 {"include_reply_count", "1"},
@@ -345,7 +365,7 @@ namespace twitter_dm {
             logger_->info("准备发送{}个并发请求", sessions.size());
             auto responses = multi_perform.Post();
             size_t session_index = 0;
-            for (const auto & user_id : user_ids) {
+            for (const auto &user_id: user_ids) {
                 if (user_id.empty()) {
                     continue;
                 }
@@ -365,7 +385,7 @@ namespace twitter_dm {
         }
         int success_count = 0;
         int failure_count = 0;
-        for (const auto& res : results) {
+        for (const auto &res: results) {
             if (res.success) {
                 success_count++;
             } else {

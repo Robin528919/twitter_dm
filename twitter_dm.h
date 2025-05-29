@@ -116,7 +116,7 @@ namespace twitter_dm {
          * @brief 获取客户端UUID
          * @return std::string 客户端UUID
          */
-        static std::string getClientUuid();
+        static std::string getClientUuid(); // Keep static, remove const as static methods cannot be const in this context.
 
         /**
          * @brief 从cookies中获取CSRF token
