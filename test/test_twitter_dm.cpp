@@ -109,8 +109,17 @@ namespace {
         // 主要测试空用户ID的处理逻辑
         EXPECT_NO_THROW({
             auto batch_result = twitter_client->sendBatchDirectMessages(user_ids, "test message");
-            std::cout << "消息发送成功:"<<batch_result.success_count << std::endl;
-            std::cout << "消息发送失败:"<<batch_result.failure_count << std::endl;
+
+            // 检查空用户ID的结果
+            bool found_empty_user_error = false;
+            for (const auto& result : batch_result.results) {
+                if (result.user_id.empty() && !result.success) {
+                    found_empty_user_error = true;
+                    EXPECT_EQ(result.error_msg, "用户ID为空");
+                    break;
+                }
+            }
+            EXPECT_TRUE(found_empty_user_error);
             });
     }
 } // namespace

@@ -15,24 +15,18 @@ FetchContent_MakeAvailable(googletest)
 # 创建测试可执行文件
 add_executable(twitter_dm_test
         test_twitter_dm.cpp
-        ../twitter_dm.cpp  # 包含源文件
+        # 注意：源文件 twitter_dm.cpp 应该由主 CMakeLists.txt 中的 ${PROJECT_NAME} 目标提供
+        # 因此这里不需要再次添加 ../twitter_dm.cpp
 )
 
 # 链接依赖库
 target_link_libraries(twitter_dm_test
-        gtest
-        gtest_main
-        spdlog::spdlog
-        nlohmann_json::nlohmann_json
-        cpr::cpr
+        PRIVATE
+        twitter_dm_lib # 链接到静态库 twitter_dm_lib
+        GTest::gtest      # 使用 GTest::gtest 而不是 gtest
+        GTest::gtest_main # 使用 GTest::gtest_main 而不是 gtest_main
 )
 
-## 设置编译选项
-#target_compile_options(twitter_dm_test PRIVATE -Wall -Wextra)
-#
-## 添加测试到CTest
-#include(GoogleTest)
-#gtest_discover_tests(twitter_dm_test)
-
-# 或者手动添加测试
-add_test(NAME TwitterDMUnitTest COMMAND twitter_dm_test)
+# 添加测试到CTest
+include(GoogleTest)
+gtest_discover_tests(twitter_dm_test)
