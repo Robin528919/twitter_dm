@@ -19,7 +19,6 @@ PYBIND11_MODULE(twitter_dm, m) {
     m.doc() = "twitter_dm库的pybind11 Python绑定";
 
     // 绑定DMResult结构体
-    // py::class_ 用于将C++类或结构体暴露给Python
     py::class_<twitter_dm::DMResult>(m, "DMResult")
             // .def(py::init<>()) // 如果有默认构造函数，可以这样绑定
             // 绑定构造函数，需要指定参数类型
@@ -76,8 +75,10 @@ PYBIND11_MODULE(twitter_dm, m) {
                  py::arg("user_id"), py::arg("message"),
                  "发送单条私信")
             .def("send_batch_direct_messages", &twitter_dm::Twitter::sendBatchDirectMessages,
-                 py::arg("user_ids"), py::arg("message"),
-                 "批量发送私信（并发执行）")
+                 py::arg("user_ids"),
+                 py::arg("message"),
+                 py::arg("client_transaction_ids"), // 新增可选参数
+                 "批量发送私信（并发执行），可选参数client_transaction_ids用于指定每个请求的X-Client-Transaction-Id")
             // 绑定setLogLevel方法，注意spdlog::level::level_enum可能需要特殊处理或转换为int
             // pybind11可以直接处理枚举类型，如果spdlog::level::level_enum已正确定义
             .def("set_log_level", &twitter_dm::Twitter::setLogLevel,
