@@ -104,7 +104,7 @@ cd /path/to/your/project
 mkdir build && cd build
 
 # 配置CMake
-cmake ..
+cmake .. -DCPR_BUILD_TESTS=ON
 
 # 编译
 make
