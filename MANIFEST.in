@@ -1,0 +1,47 @@
+# MANIFEST.in - 指定要包含在 Python 包中的额外文件
+# 这个文件告诉 setuptools 哪些文件应该包含在源分发包中
+
+# 包含项目文档
+include README.md
+include LICENSE*
+
+# 包含项目配置文件
+include pyproject.toml
+include requirements.txt
+include setup.py
+
+# 包含 CMake 构建文件
+include CMakeLists.txt
+recursive-include test *.cpp *.h *.txt CMakeLists.txt
+
+# 包含 C++ 源文件
+include *.cpp *.h
+include bindings.cpp
+include twitter_dm.cpp
+include twitter_dm.h
+
+# 包含外部依赖（如果需要）
+recursive-include extern *
+
+# 包含 Python 包文件
+recursive-include twitter_dm *.py
+
+# 包含数据文件
+include *.txt
+include user_ids.txt
+
+# 排除不需要的文件
+exclude .gitignore
+recursive-exclude .git *
+recursive-exclude .github *
+recursive-exclude .idea *
+recursive-exclude .vscode *
+recursive-exclude build *
+recursive-exclude __pycache__ *
+recursive-exclude *.egg-info *
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *.so
+global-exclude *.dylib
+global-exclude *.dll
+global-exclude .DS_Store

@@ -1,0 +1,80 @@
+# Python 项目配置文件
+# 定义项目元数据、构建系统和依赖关系
+
+[build-system]
+# 指定构建后端和构建依赖
+requires = [
+    "setuptools>=45",
+    "wheel",
+    "pybind11>=2.11.1",
+    "cmake>=3.15"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+# 项目基本信息
+name = "twitter-dm-static"
+version = "0.1.0"
+description = "Twitter DM static analysis tool with C++ backend and Python bindings"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+    {name = "robin", email = "robin528919@gmail.com"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: C++"
+]
+
+# 项目依赖
+dependencies = [
+    # 运行时依赖可以在这里添加
+    # 例如: "requests>=2.25.0",
+    # "numpy>=1.20.0"
+]
+
+# 可选依赖组
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "pytest-cov",
+    "black",
+    "flake8"
+]
+
+# 项目 URL
+[project.urls]
+Homepage = "https://github.com/yourusername/twitter-dm-static"
+Repository = "https://github.com/yourusername/twitter-dm-static.git"
+Issues = "https://github.com/yourusername/twitter-dm-static/issues"
+
+# setuptools 特定配置
+[tool.setuptools]
+# 包发现配置
+packages = ["twitter_dm"]
+
+# 包含额外文件
+[tool.setuptools.package-dir]
+"" = "."
+
+# 动态查找包
+[tool.setuptools.packages.find]
+where = ["."]  # 在项目根目录查找包
+include = ["twitter_dm*"]  # 包含 twitter_dm 包及其子包
+exclude = ["test*", "build*", "extern*"]  # 排除测试和构建目录
+
+# 包含 C++ 扩展模块
+[tool.setuptools.package-data]
+"*" = ["*.so", "*.pyd", "*.dll"]
+
+# CMake 扩展配置（如果使用 pybind11[global]）
+[tool.pybind11]
+cmake = true
