@@ -170,8 +170,14 @@ jobs:
     # 不使用cibuildwheel，直接使用pip wheel构建wheel包
     - name: Build wheels
       run: |
-        # 创建twitter_dm目录
+        # 确保twitter_dm目录存在并包含__init__.py
         mkdir -p twitter_dm
+        
+        # 确保__init__.py文件存在
+        if [ ! -f "twitter_dm/__init__.py" ]; then
+          echo "警告: twitter_dm/__init__.py不存在，复制源文件..."
+          cp $GITHUB_WORKSPACE/twitter_dm/__init__.py twitter_dm/
+        fi
         
         # 复制构建工件到twitter_dm目录
         echo "复制构建工件到twitter_dm目录..."
@@ -181,12 +187,18 @@ jobs:
         echo "twitter_dm目录中的文件:"
         ls -la twitter_dm/
         
-        # 使用pip wheel构建wheel包
-        python -m pip wheel -w dist .
+        # 使用build构建wheel包
+        python -m build --wheel
         
         # 列出生成的wheel包
         echo "生成的wheel包:"
         ls -la dist/
+        
+        # 检查wheel包内容
+        echo "检查wheel包内容:"
+        pip install wheel
+        wheel unpack dist/*.whl
+        find twitter_dm_static* -type f | sort
     
     # 构建源码分发包
     - name: Build sdist
@@ -196,8 +208,15 @@ jobs:
     # 测试安装
     - name: Test package installation
       run: |
+        # 安装wheel包
         pip install dist/*.whl
-        python -c "import twitter_dm; print(twitter_dm.get_version())"
+        
+        # 列出安装的包内容
+        echo "安装的包内容:"
+        pip show -f twitter-dm-static
+        
+        # 测试导入和基本功能
+        python -c "import twitter_dm; print('版本:', twitter_dm.get_version()); print('C++扩展可用:', twitter_dm.is_cpp_extension_available()); print('构建信息:', twitter_dm.get_build_info())"
     
     - name: Publish to PyPI
       # 发布到 PyPI，使用Trusted Publishing
