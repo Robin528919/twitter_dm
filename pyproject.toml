@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "twitter-dm-static"
-version = "0.1.4"  # 更新为metadata.py中的版本
+version = "0.1.5"
 description = "Twitter DM static analysis tool with C++ backend"
 readme = "README.md"
 requires-python = ">=3.8"
