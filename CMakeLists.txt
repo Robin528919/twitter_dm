@@ -62,8 +62,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(cpr)
 
-
-add_subdirectory(extern/pybind11)
+# 添加 pybind11 - 下载到 extern 目录
+FetchContent_Declare(
+        pybind11
+        GIT_REPOSITORY https://github.com/pybind/pybind11.git
+        GIT_TAG v2.11.1
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/extern/pybind11
+)
+FetchContent_MakeAvailable(pybind11)
 
 # 创建一个静态库，包含核心逻辑
 add_library(twitter_dm_lib STATIC twitter_dm.cpp twitter_dm.h)
