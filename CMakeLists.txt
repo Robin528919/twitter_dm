@@ -116,34 +116,26 @@ install(TARGETS ${PROJECT_NAME} twitter_dm_lib DESTINATION .)
 
 # 安装依赖的动态库
 if(APPLE OR UNIX)
-    # 获取CPR库的位置
-    get_target_property(CPR_LIBRARY cpr::cpr LOCATION)
-    get_filename_component(CPR_LIBRARY_DIR ${CPR_LIBRARY} DIRECTORY)
+    # 使用生成器表达式获取CPR库的位置
+    set(CPR_LIBRARY $<TARGET_FILE:cpr::cpr>)
     
-    # 安装CPR库及其依赖
-    file(GLOB CPR_LIBS "${CPR_LIBRARY_DIR}/libcpr*.dylib" "${CPR_LIBRARY_DIR}/libcpr*.so")
-    foreach(LIB ${CPR_LIBS})
-        install(FILES ${LIB} DESTINATION .)
-    endforeach()
+    # 安装CPR库
+    install(FILES ${CPR_LIBRARY} DESTINATION .)
     
-    # 获取CURL库的位置
-    get_target_property(CURL_LIBRARY CURL::libcurl LOCATION)
-    if(CURL_LIBRARY)
-        get_filename_component(CURL_LIBRARY_DIR ${CURL_LIBRARY} DIRECTORY)
-        
-        # 安装CURL库及其依赖
-        file(GLOB CURL_LIBS "${CURL_LIBRARY_DIR}/libcurl*.dylib" "${CURL_LIBRARY_DIR}/libcurl*.so")
-        foreach(LIB ${CURL_LIBS})
-            install(FILES ${LIB} DESTINATION .)
-        endforeach()
-    endif()
+    # 使用生成器表达式获取CURL库的位置
+    set(CURL_LIBRARY $<TARGET_FILE:CURL::libcurl>)
+    
+    # 安装CURL库
+    install(FILES ${CURL_LIBRARY} DESTINATION .)
     
     # 安装ZLIB库（如果需要）
     find_package(ZLIB)
     if(ZLIB_FOUND)
-        file(GLOB ZLIB_LIBS "${ZLIB_LIBRARY_DIRS}/libz*.dylib" "${ZLIB_LIBRARY_DIRS}/libz*.so")
-        foreach(LIB ${ZLIB_LIBS})
-            install(FILES ${LIB} DESTINATION .)
+        # 使用ZLIB_LIBRARIES变量获取ZLIB库的路径
+        foreach(LIB ${ZLIB_LIBRARIES})
+            if(EXISTS "${LIB}")
+                install(FILES "${LIB}" DESTINATION .)
+            endif()
         endforeach()
     endif()
 endif()
