@@ -47,6 +47,19 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Set up Python 3.12
+      # 设置 Python 3.12 环境，用于构建过程中的依赖
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install Python dependencies
+      # 安装 Python 依赖包（如果需要的话）
+      run: |
+        python -m pip install --upgrade pip
+        # 如果有 requirements.txt 文件，取消下面一行的注释
+        # pip install -r requirements.txt
+
     - name: Set reusable strings
       # 将重复的输入字符串（如构建输出目录）转换为步骤输出。这些步骤输出可以在整个工作流文件中使用。
       id: strings
