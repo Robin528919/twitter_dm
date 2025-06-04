@@ -198,7 +198,7 @@ jobs:
         
         # 复制构建工件到twitter_dm目录
         echo "复制构建工件到twitter_dm目录..."
-        find artifacts -type f -name "*.so" -o -name "*.dylib" -o -name "*.dll" -o -name "*.pyd" -o -name "libcpr*" -o -name "libcurl*" -o -name "libz*" | xargs -I{} cp {} twitter_dm/
+        find artifacts -type f -name "*.so" -o -name "*.dylib" -o -name "*.dll" -o -name "*.pyd" | xargs -I{} cp {} twitter_dm/
         
         # 列出twitter_dm目录中的文件
         echo "twitter_dm目录中的文件:"
