@@ -122,17 +122,38 @@ class CustomBuildExt(build_ext):
             "twitter_dm*.so",  # Linux/macOS
             "twitter_dm*.pyd",  # Windows
             "twitter_dm*.dylib",  # macOS 动态库
+            "*.so",  # 更通用的模式，以防文件名不完全匹配
+            "*.pyd",
+            "*.dylib",
         ]
+
+        # 确保目标目录存在
+        dst_dir = Path(self.build_lib) / "twitter_dm"
+        dst_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 记录是否找到了任何文件
+        found_files = False
 
         for pattern in patterns:
             files = list(build_dir.glob(f"**/{pattern}"))
             for src_file in files:
-                # 复制到构建目录
-                dst_dir = Path(self.build_lib)
-                dst_dir.mkdir(parents=True, exist_ok=True)
-                dst_file = dst_dir / src_file.name
-                shutil.copy2(src_file, dst_file)
-                print(f"复制扩展模块: {src_file} -> {dst_file}")
+                # 只复制与twitter_dm相关的文件
+                if "twitter_dm" in src_file.name or "twitter-dm" in src_file.name:
+                    # 复制到构建目录的twitter_dm子目录
+                    dst_file = dst_dir / src_file.name
+                    shutil.copy2(src_file, dst_file)
+                    print(f"复制扩展模块: {src_file} -> {dst_file}")
+                    found_files = True
+        
+        # 如果没有找到任何文件，打印警告
+        if not found_files:
+            print("警告: 未找到任何扩展模块文件！")
+            print(f"搜索目录: {build_dir}")
+            print("尝试列出构建目录中的所有文件:")
+            all_files = list(build_dir.glob("**/*"))
+            for file in all_files:
+                if file.is_file():
+                    print(f"  {file}")
 
 
 # 主安装配置

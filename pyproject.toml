@@ -70,7 +70,12 @@ exclude = ["test*", "build*", "extern*"]  # 排除测试和构建目录
 
 # 包含 C++ 扩展模块
 [tool.setuptools.package-data]
-"*" = ["*.so", "*.pyd", "*.dll"]
+"*" = ["*.so", "*.pyd", "*.dll", "*.dylib"]
+"twitter_dm" = ["*.so", "*.pyd", "*.dll", "*.dylib"]  # 明确指定twitter_dm包中的扩展模块
+
+# 确保不排除任何编译后的库文件
+[tool.setuptools.exclude-package-data]
+"*" = []
 
 # CMake 扩展配置（如果使用 pybind11[global]）
 [tool.pybind11]
