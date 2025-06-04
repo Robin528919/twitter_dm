@@ -41,7 +41,11 @@ recursive-exclude __pycache__ *
 recursive-exclude *.egg-info *
 global-exclude *.pyc
 global-exclude *.pyo
-global-exclude *.so
-global-exclude *.dylib
-global-exclude *.dll
+# 不要全局排除编译后的库文件，否则它们不会被包含在wheel包中
+# global-exclude *.so
+# global-exclude *.dylib
+# global-exclude *.dll
 global-exclude .DS_Store
+
+# 明确包含编译后的库文件
+recursive-include twitter_dm *.so *.pyd *.dylib *.dll
