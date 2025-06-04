@@ -18,7 +18,7 @@ if(APPLE)
   endif()
 endif()
 # 添加一个选项来控制 Python 环境
-option(USE_LOCAL_PYTHON_ENV "使用本地 Python 环境" OFF)
+option(USE_LOCAL_PYTHON_ENV "使用本地 Python 环境" ON)
 
 if(USE_LOCAL_PYTHON_ENV)
     message(STATUS "使用本地 Python 环境")
@@ -88,7 +88,7 @@ FetchContent_MakeAvailable(pybind11)
 # 创建一个静态库，包含核心逻辑
 add_library(twitter_dm_lib STATIC twitter_dm.cpp twitter_dm.h)
 # 设置 -fPIC 选项，以便静态库可以被用于创建共享库
-set_target_properties(twitter_dm_lib PROPERTIES POSITION_INDEPENDENT_CODE OFF)
+set_target_properties(twitter_dm_lib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # 为静态库链接依赖
 target_link_libraries(twitter_dm_lib PUBLIC cpr::cpr nlohmann_json::nlohmann_json spdlog::spdlog)
 
