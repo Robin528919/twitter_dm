@@ -149,6 +149,29 @@ jobs:
       env:
         CIBW_SKIP: pp* cp36-* cp37-*  # 跳过不支持的Python版本
         CIBW_BEFORE_BUILD: pip install cmake pybind11
+        # 确保在构建wheel之前运行CMake构建过程
+        CIBW_BEFORE_ALL_LINUX: >
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DUSE_LOCAL_PYTHON_ENV=ON &&
+          cmake --build build --config Release
+        CIBW_BEFORE_ALL_MACOS: >
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DUSE_LOCAL_PYTHON_ENV=ON &&
+          cmake --build build --config Release
+        CIBW_BEFORE_ALL_WINDOWS: >
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DUSE_LOCAL_PYTHON_ENV=ON &&
+          cmake --build build --config Release
+        # 确保构建的扩展模块被正确包含在wheel包中
+        CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
+          pip install auditwheel &&
+          find build -name "twitter_dm*.so" -exec cp {} {dest_dir}/twitter_dm/ \; &&
+          auditwheel repair -w {dest_dir} {wheel}
+        CIBW_REPAIR_WHEEL_COMMAND_MACOS: >
+          pip install delocate &&
+          find build -name "twitter_dm*.so" -name "twitter_dm*.dylib" -exec cp {} {dest_dir}/twitter_dm/ \; &&
+          delocate-wheel -w {dest_dir} {wheel}
+        CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >
+          pip install delvewheel &&
+          for /r build %%i in (twitter_dm*.pyd twitter_dm*.dll) do copy %%i {dest_dir}\twitter_dm\ &&
+          delvewheel repair -w {dest_dir} {wheel}
     
     # 构建源码分发包
     - name: Build sdist
