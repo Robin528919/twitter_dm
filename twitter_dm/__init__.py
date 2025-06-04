@@ -7,10 +7,13 @@ Twitter DM Static Analysis Tool - Python 包初始化文件
 底层使用 C++ 实现高性能的批量私信发送功能。
 """
 
-__version__ = "0.1.0"
-__author__ = "robin"
-__email__ = "robin528919@gmial.com"
-__description__ = "Twitter DM static analysis tool with C++ backend"
+# 从元数据文件导入版本信息和作者信息
+from .metadata import (
+    __version__,
+    __author__,
+    __email__,
+    __description__,
+)
 
 # 尝试导入 C++ 扩展模块
 try:

@@ -9,6 +9,7 @@ Twitter DM Static Analysis Tool - Python 包安装脚本
 
 import shutil
 import sys
+import importlib.util
 from pathlib import Path
 
 from pybind11.setup_helpers import build_ext
@@ -17,11 +18,22 @@ from setuptools import setup
 # 项目根目录
 project_root = Path(__file__).parent
 
+# 从metadata.py导入元数据
+def import_metadata():
+    """从 metadata.py 导入元数据"""
+    metadata_path = project_root / "twitter_dm" / "metadata.py"
+    spec = importlib.util.spec_from_file_location("metadata", metadata_path)
+    metadata = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(metadata)
+    return metadata
+
+# 导入元数据
+metadata = import_metadata()
 
 # 读取版本信息
 def get_version():
-    """从 pyproject.toml 或其他源获取版本号"""
-    return "0.1.0"
+    """从 metadata.py 获取版本号"""
+    return metadata.__version__
 
 
 # 读取长描述
@@ -159,14 +171,15 @@ class CustomBuildExt(build_ext):
 # 主安装配置
 if __name__ == "__main__":
     setup(
-        name="twitter-dm-static",
+        name=metadata.__name__,
         version=get_version(),
-        author="robin",
-        author_email="robin528919@gmail.com",
-        description="Twitter DM static analysis tool with C++ backend",
+        author=metadata.__author__,
+        author_email=metadata.__email__,
+        description=metadata.__description__,
         long_description=get_long_description(),
         long_description_content_type="text/markdown",
-        url="https://github.com/yourusername/twitter-dm-static",
+        url=metadata.__url__,
+        license=metadata.__license__,
 
         # Python 包配置
         packages=["twitter_dm"],  # 包含 twitter_dm Python 包
@@ -176,36 +189,18 @@ if __name__ == "__main__":
         cmdclass={"build_ext": CustomBuildExt},
 
         # Python 版本要求
-        python_requires=">=3.8",
+        python_requires=metadata.__requires_python__,
 
         # 运行时依赖
-        install_requires=[
-            # 在这里添加运行时依赖
-        ],
+        install_requires=metadata.__dependencies__,
 
         # 开发依赖
         extras_require={
-            "dev": [
-                "pytest>=6.0",
-                "pytest-cov",
-                "black",
-                "flake8",
-            ],
+            "dev": metadata.__dev_dependencies__,
         },
 
         # 分类信息
-        classifiers=[
-            "Development Status :: 3 - Alpha",
-            "Intended Audience :: Developers",
-            "License :: OSI Approved :: MIT License",
-            "Programming Language :: Python :: 3",
-            "Programming Language :: Python :: 3.8",
-            "Programming Language :: Python :: 3.9",
-            "Programming Language :: Python :: 3.10",
-            "Programming Language :: Python :: 3.11",
-            "Programming Language :: Python :: 3.12",
-            "Programming Language :: C++",
-        ],
+        classifiers=metadata.__classifiers__,
 
         # 包含数据文件
         include_package_data=True,
