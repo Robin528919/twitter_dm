@@ -114,6 +114,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # 添加OIDC权限，用于Trusted Publishing
+    permissions:
+      id-token: write
     
     steps:
     - uses: actions/checkout@v4
@@ -138,21 +141,30 @@ jobs:
       # 安装构建和打包所需的依赖
       run: |
         python -m pip install --upgrade pip
-        pip install build wheel setuptools
+        pip install build wheel setuptools cibuildwheel
     
-    - name: Build Python package
-      # 构建 Python 包分发文件
+    # 使用cibuildwheel构建预编译wheel包
+    - name: Build wheels
+      uses: pypa/cibuildwheel@v2.16.2
+      env:
+        CIBW_SKIP: pp* cp36-* cp37-*  # 跳过不支持的Python版本
+        CIBW_BEFORE_BUILD: pip install cmake pybind11
+    
+    # 构建源码分发包
+    - name: Build sdist
       run: |
-        python -m build
+        python -m build --sdist
+    
+    # 测试安装
+    - name: Test package installation
+      run: |
+        pip install dist/*.whl
+        python -c "import twitter_dm; print(twitter_dm.get_version())"
     
     - name: Publish to PyPI
-      # 发布到 PyPI
+      # 发布到 PyPI，使用Trusted Publishing
       uses: pypa/gh-action-pypi-publish@v1.12.4
       with:
-        # PyPI 用户名（可选，默认为 __token__）
-        user: __token__
-        # PyPI 访问令牌（需要在 GitHub Secrets 中设置 PYPI_API_TOKEN）
-        password: ${{ secrets.PYPI_API_TOKEN }}
         # 分发文件的目录（默认为 dist）
         packages-dir: dist
         # 上传前验证元数据
