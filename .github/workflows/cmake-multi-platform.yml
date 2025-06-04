@@ -167,29 +167,26 @@ jobs:
         python -m pip install --upgrade pip
         pip install build wheel setuptools cibuildwheel
     
-    # 使用cibuildwheel构建预编译wheel包
+    # 不使用cibuildwheel，直接使用pip wheel构建wheel包
     - name: Build wheels
-      uses: pypa/cibuildwheel@v2.16.2
-      env:
-        CIBW_SKIP: pp* cp36-* cp37-*  # 跳过不支持的Python版本
-        CIBW_BEFORE_BUILD: pip install cmake pybind11
-        # 不使用CIBW_BEFORE_ALL，而是让setup.py中的CustomBuildExt处理CMake构建
-        # 修改CIBW_REPAIR_WHEEL_COMMAND以简化命令，避免错误
-        CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
-          pip install auditwheel &&
-          mkdir -p {dest_dir}/twitter_dm &&
-          if [ -d "build" ]; then find build -name "*.so" -exec cp {} {dest_dir}/twitter_dm/ \; || true; fi &&
-          auditwheel repair -w {dest_dir} {wheel}
-        CIBW_REPAIR_WHEEL_COMMAND_MACOS: >
-          pip install delocate &&
-          mkdir -p {dest_dir}/twitter_dm &&
-          if [ -d "build" ]; then find build -name "*.so" -o -name "*.dylib" -exec cp {} {dest_dir}/twitter_dm/ \; || true; fi &&
-          delocate-wheel -w {dest_dir} {wheel}
-        CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >
-          pip install delvewheel &&
-          mkdir -p {dest_dir}/twitter_dm &&
-          if exist build (for /r build %i in (*.pyd *.dll) do copy %i {dest_dir}\twitter_dm\ || echo "No files found") &&
-          delvewheel repair -w {dest_dir} {wheel}
+      run: |
+        # 创建twitter_dm目录
+        mkdir -p twitter_dm
+        
+        # 复制构建工件到twitter_dm目录
+        echo "复制构建工件到twitter_dm目录..."
+        find artifacts -type f -name "*.so" -o -name "*.dylib" -o -name "*.dll" -o -name "*.pyd" | xargs -I{} cp {} twitter_dm/
+        
+        # 列出twitter_dm目录中的文件
+        echo "twitter_dm目录中的文件:"
+        ls -la twitter_dm/
+        
+        # 使用pip wheel构建wheel包
+        python -m pip wheel -w dist .
+        
+        # 列出生成的wheel包
+        echo "生成的wheel包:"
+        ls -la dist/
     
     # 构建源码分发包
     - name: Build sdist
