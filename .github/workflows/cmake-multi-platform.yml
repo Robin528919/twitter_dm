@@ -111,14 +111,11 @@ jobs:
       
     # 上传构建结果作为工件，供后续pypi-publish作业使用
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: build-artifacts-${{ matrix.os }}-${{ matrix.c_compiler }}
         path: |
-          ${{ steps.strings.outputs.build-output-dir }}/**/*.so
-          ${{ steps.strings.outputs.build-output-dir }}/**/*.dylib
-          ${{ steps.strings.outputs.build-output-dir }}/**/*.dll
-          ${{ steps.strings.outputs.build-output-dir }}/**/*.pyd
+          ${{ steps.strings.outputs.build-output-dir }}
         if-no-files-found: warn
 
   # PyPI 发布作业 - 仅在构建成功且推送到 main 分支时运行
@@ -141,9 +138,10 @@ jobs:
         
     # 下载所有构建工件
     - name: Download build artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         path: artifacts
+        merge-multiple: true
         
     # 创建build目录并复制构建工件
     - name: Prepare build artifacts
