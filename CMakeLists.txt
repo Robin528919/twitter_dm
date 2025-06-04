@@ -116,27 +116,57 @@ install(TARGETS ${PROJECT_NAME} DESTINATION .)
 
 # 安装依赖的动态库
 if(APPLE OR UNIX)
-    # 使用生成器表达式获取CPR库的位置
-    set(CPR_LIBRARY $<TARGET_FILE:cpr::cpr>)
-    
     # 安装CPR库
-    install(FILES ${CPR_LIBRARY} DESTINATION .)
-    
-    # 使用生成器表达式获取CURL库的位置
-    set(CURL_LIBRARY $<TARGET_FILE:CURL::libcurl>)
+    if(UNIX AND NOT APPLE)
+        # 在Linux上，安装CPR库及其符号链接
+        install(TARGETS cpr::cpr DESTINATION .)
+        
+        # 创建符号链接
+        install(CODE "
+            execute_process(
+                COMMAND ${CMAKE_COMMAND} -E create_symlink 
+                libcpr.so 
+                \${CMAKE_INSTALL_PREFIX}/libcpr.so.1
+            )
+        ")
+    else()
+        # 在macOS上，使用生成器表达式获取CPR库的位置
+        set(CPR_LIBRARY $<TARGET_FILE:cpr::cpr>)
+        install(FILES ${CPR_LIBRARY} DESTINATION .)
+    endif()
     
     # 安装CURL库
-    install(FILES ${CURL_LIBRARY} DESTINATION .)
+    if(UNIX AND NOT APPLE)
+        # 在Linux上，安装CURL库及其符号链接
+        install(TARGETS CURL::libcurl DESTINATION .)
+    else()
+        # 在macOS上，使用生成器表达式获取CURL库的位置
+        set(CURL_LIBRARY $<TARGET_FILE:CURL::libcurl>)
+        install(FILES ${CURL_LIBRARY} DESTINATION .)
+    endif()
     
     # 安装ZLIB库（如果需要）
     find_package(ZLIB)
     if(ZLIB_FOUND)
-        # 使用ZLIB_LIBRARIES变量获取ZLIB库的路径
-        foreach(LIB ${ZLIB_LIBRARIES})
-            if(EXISTS "${LIB}")
-                install(FILES "${LIB}" DESTINATION .)
+        if(UNIX AND NOT APPLE)
+            # 在Linux上，尝试安装ZLIB库及其符号链接
+            find_library(ZLIB_LIBRARY_PATH NAMES z)
+            if(ZLIB_LIBRARY_PATH)
+                install(FILES ${ZLIB_LIBRARY_PATH} DESTINATION .)
+                get_filename_component(ZLIB_LIBRARY_DIR ${ZLIB_LIBRARY_PATH} DIRECTORY)
+                file(GLOB ZLIB_SYMLINKS "${ZLIB_LIBRARY_DIR}/libz.so*")
+                foreach(SYMLINK ${ZLIB_SYMLINKS})
+                    install(FILES ${SYMLINK} DESTINATION .)
+                endforeach()
             endif()
-        endforeach()
+        else()
+            # 在macOS上，使用ZLIB_LIBRARIES变量获取ZLIB库的路径
+            foreach(LIB ${ZLIB_LIBRARIES})
+                if(EXISTS "${LIB}")
+                    install(FILES "${LIB}" DESTINATION .)
+                endif()
+            endforeach()
+        endif()
     endif()
 endif()
 

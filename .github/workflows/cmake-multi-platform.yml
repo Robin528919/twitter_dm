@@ -184,10 +184,21 @@ jobs:
       run: |
         # 复制构建工件到根目录
         echo "复制构建工件到根目录..."
+        # 复制所有.so、.dylib、.dll和.pyd文件
         find artifacts -type f \( -name "*.so" -o -name "*.dylib" -o -name "*.dll" -o -name "*.pyd" \) | xargs -I{} cp {} ./
+        
+        # 特别处理libcpr.so.1符号链接
+        if [ -f "artifacts/libcpr.so" ]; then
+          cp artifacts/libcpr.so ./
+          ln -sf libcpr.so libcpr.so.1
+        fi
+        
+        # 复制所有libcpr*、libcurl*和libz*文件，但排除CMakeFiles和docs目录
+        find artifacts -type f \( -name "libcpr*" -o -name "libcurl*" -o -name "libz*" \) -not -path "*/CMakeFiles/*" -not -path "*/docs/*" | xargs -I{} cp {} ./ 2>/dev/null || true
+        
         # 列出根目录中的文件
         echo "根目录中的文件:"
-        ls -la *.so *.dylib *.dll *.pyd 2>/dev/null || echo "没有找到扩展模块文件"
+        ls -la *.so *.dylib *.dll *.pyd libcpr* libcurl* libz* 2>/dev/null || echo "没有找到扩展模块文件"
         
         # 使用build构建wheel包
         python -m build --wheel
