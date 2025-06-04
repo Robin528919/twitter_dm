@@ -121,12 +121,6 @@ class CustomBuildExt(build_ext):
             "twitter_dm*.so",  # Linux/macOS
             "twitter_dm*.pyd",  # Windows
             "twitter_dm*.dylib",  # macOS 动态库
-            "libcpr*.so",  # CPR库 (Linux)
-            "libcpr*.dylib",  # CPR库 (macOS)
-            "libcurl*.so",  # CURL库 (Linux)
-            "libcurl*.dylib",  # CURL库 (macOS)
-            "libz*.so",  # ZLIB库 (Linux)
-            "libz*.dylib",  # ZLIB库 (macOS)
             "*.dll",  # Windows动态库
             "*.so",  # 更通用的模式，以防文件名不完全匹配
             "*.pyd",
