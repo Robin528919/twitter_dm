@@ -39,14 +39,19 @@ def get_extensions():
     """
     定义 C++ 扩展模块配置
     
-    由于项目使用 CMake 构建系统，这里返回空列表，
-    实际的扩展构建由 CustomBuildExt 中的 CMake 处理。
+    我们声明一个Extension对象，以便setuptools知道我们期望一个名为twitter_dm的扩展模块。
+    实际的构建由CustomBuildExt中的CMake处理。
     
     Returns:
-        list: 空的扩展模块列表
+        list: 包含一个Extension对象的列表
     """
-    # 返回空列表，让 CMake 处理实际的构建
-    return []
+    from setuptools import Extension
+    return [
+        Extension(
+            "twitter_dm",  # 最终的模块名
+            sources=[]     # 源文件由CMake处理，这里为空列表
+        )
+    ]
 
 # 自定义构建命令
 class CustomBuildExt(build_ext):
