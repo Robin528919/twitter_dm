@@ -58,9 +58,6 @@ Issues = "https://github.com/yourusername/twitter-dm-static/issues"
 
 # setuptools 特定配置
 [tool.setuptools]
-# 包发现配置
-packages = ["twitter_dm"]
-
 # 包含额外文件
 [tool.setuptools.package-dir]
 "" = "."
