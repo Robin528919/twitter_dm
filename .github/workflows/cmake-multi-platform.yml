@@ -86,3 +86,48 @@ jobs:
       # 执行由 CMake 配置定义的测试。请注意，需要 --build-config 是因为默认的 Windows 生成器是多配置生成器（Visual Studio 生成器）。
       # 更多详细信息请参见 https://cmake.org/cmake/help/latest/manual/ctest.1.html
       run: ctest --build-config ${{ matrix.build_type }}
+
+  # PyPI 发布作业 - 仅在构建成功且推送到 main 分支时运行
+  pypi-publish:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.12
+      # 设置 Python 3.12 环境用于打包
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+    
+    - name: Install build dependencies
+      # 安装构建和打包所需的依赖
+      run: |
+        python -m pip install --upgrade pip
+        pip install build wheel setuptools
+    
+    - name: Build Python package
+      # 构建 Python 包分发文件
+      run: |
+        python -m build
+    
+    - name: Publish to PyPI
+      # 发布到 PyPI
+      uses: pypa/gh-action-pypi-publish@v1.12.4
+      with:
+        # PyPI 用户名（可选，默认为 __token__）
+        user: __token__
+        # PyPI 访问令牌（需要在 GitHub Secrets 中设置 PYPI_API_TOKEN）
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        # 分发文件的目录（默认为 dist）
+        packages-dir: dist
+        # 上传前验证元数据
+        verify-metadata: true
+        # 如果包已存在则跳过（避免重复上传失败）
+        skip-existing: false
+        # 显示详细输出
+        verbose: true
+        # 显示文件哈希值
+        print-hash: true
