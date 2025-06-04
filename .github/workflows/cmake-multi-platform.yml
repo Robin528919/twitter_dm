@@ -179,30 +179,16 @@ jobs:
       run: |
         python -m pip install tomli tomli_w
     
-    # 更新pyproject.toml文件
-    - name: Update pyproject.toml
-      run: |
-        python update_pyproject.py
-    
     # 不使用cibuildwheel，直接使用pip wheel构建wheel包
     - name: Build wheels
       run: |
-        # 确保twitter_dm目录存在并包含__init__.py
-        mkdir -p twitter_dm
+        # 复制构建工件到根目录
+        echo "复制构建工件到根目录..."
+        find artifacts -type f -name "*.so" -o -name "*.dylib" -o -name "*.dll" -o -name "*.pyd" -o -name "libcpr*" -o -name "libcurl*" -o -name "libz*" | xargs -I{} cp {} ./
         
-        # 确保__init__.py文件存在
-        if [ ! -f "twitter_dm/__init__.py" ]; then
-          echo "警告: twitter_dm/__init__.py不存在，复制源文件..."
-          cp $GITHUB_WORKSPACE/twitter_dm/__init__.py twitter_dm/
-        fi
-        
-        # 复制构建工件到twitter_dm目录
-        echo "复制构建工件到twitter_dm目录..."
-        find artifacts -type f -name "*.so" -o -name "*.dylib" -o -name "*.dll" -o -name "*.pyd" | xargs -I{} cp {} twitter_dm/
-        
-        # 列出twitter_dm目录中的文件
-        echo "twitter_dm目录中的文件:"
-        ls -la twitter_dm/
+        # 列出根目录中的文件
+        echo "根目录中的文件:"
+        ls -la *.so *.dylib *.dll *.pyd 2>/dev/null || echo "没有找到扩展模块文件"
         
         # 使用build构建wheel包
         python -m build --wheel
@@ -233,7 +219,7 @@ jobs:
         pip show -f twitter-dm-static
         
         # 测试导入和基本功能
-        python -c "import twitter_dm; print('版本:', twitter_dm.get_version()); print('C++扩展可用:', twitter_dm.is_cpp_extension_available()); print('构建信息:', twitter_dm.get_build_info())"
+        python -c "import twitter_dm; print('版本:', twitter_dm.__version__ if hasattr(twitter_dm, '__version__') else 'unknown')"
     
     - name: Publish to PyPI
       # 发布到 PyPI，使用Trusted Publishing

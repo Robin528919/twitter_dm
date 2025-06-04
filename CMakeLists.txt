@@ -111,8 +111,8 @@ elseif(UNIX AND NOT APPLE)
     )
 endif()
 
-# 安装目标文件
-install(TARGETS ${PROJECT_NAME} twitter_dm_lib DESTINATION .)
+# 安装目标文件 - 直接安装到根目录
+install(TARGETS ${PROJECT_NAME} DESTINATION .)
 
 # 安装依赖的动态库
 if(APPLE OR UNIX)

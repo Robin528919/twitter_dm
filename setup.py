@@ -9,7 +9,7 @@ Twitter DM Static Analysis Tool - Python 包安装脚本
 
 import shutil
 import sys
-import importlib.util
+import tomli
 from pathlib import Path
 
 from pybind11.setup_helpers import build_ext
@@ -18,23 +18,12 @@ from setuptools import setup
 # 项目根目录
 project_root = Path(__file__).parent
 
-# 从metadata.py导入元数据
-def import_metadata():
-    """从 metadata.py 导入元数据"""
-    metadata_path = project_root / "twitter_dm" / "metadata.py"
-    spec = importlib.util.spec_from_file_location("metadata", metadata_path)
-    metadata = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(metadata)
-    return metadata
-
-# 导入元数据
-metadata = import_metadata()
-
 # 读取版本信息
 def get_version():
-    """从 metadata.py 获取版本号"""
-    return metadata.__version__
-
+    """从 pyproject.toml 获取版本号"""
+    with open("pyproject.toml", "rb") as f:
+        data = tomli.load(f)
+    return data["project"]["version"]
 
 # 读取长描述
 def get_long_description():
@@ -44,7 +33,6 @@ def get_long_description():
         with open(readme_path, "r", encoding="utf-8") as f:
             return f.read()
     return ""
-
 
 # 定义 C++ 扩展模块
 def get_extensions():
@@ -59,7 +47,6 @@ def get_extensions():
     """
     # 返回空列表，让 CMake 处理实际的构建
     return []
-
 
 # 自定义构建命令
 class CustomBuildExt(build_ext):
@@ -134,14 +121,20 @@ class CustomBuildExt(build_ext):
             "twitter_dm*.so",  # Linux/macOS
             "twitter_dm*.pyd",  # Windows
             "twitter_dm*.dylib",  # macOS 动态库
+            "libcpr*.so",  # CPR库 (Linux)
+            "libcpr*.dylib",  # CPR库 (macOS)
+            "libcurl*.so",  # CURL库 (Linux)
+            "libcurl*.dylib",  # CURL库 (macOS)
+            "libz*.so",  # ZLIB库 (Linux)
+            "libz*.dylib",  # ZLIB库 (macOS)
             "*.dll",  # Windows动态库
             "*.so",  # 更通用的模式，以防文件名不完全匹配
             "*.pyd",
             "*.dylib",
         ]
 
-        # 确保目标目录存在
-        dst_dir = Path(self.build_lib) / "twitter_dm"
+        # 确保目标目录存在 - 直接使用根目录，不再使用twitter_dm子目录
+        dst_dir = Path(self.build_lib)
         dst_dir.mkdir(parents=True, exist_ok=True)
         
         # 记录是否找到了任何文件
@@ -156,7 +149,7 @@ class CustomBuildExt(build_ext):
                     "libcpr" in src_file.name or
                     "libcurl" in src_file.name or
                     "libz" in src_file.name):
-                    # 复制到构建目录的twitter_dm子目录
+                    # 复制到构建目录的根目录
                     dst_file = dst_dir / src_file.name
                     shutil.copy2(src_file, dst_file)
                     print(f"复制文件: {src_file} -> {dst_file}")
@@ -172,40 +165,48 @@ class CustomBuildExt(build_ext):
                 if file.is_file():
                     print(f"  {file}")
 
+# 从pyproject.toml读取项目信息
+def get_project_info():
+    """从pyproject.toml读取项目信息"""
+    with open("pyproject.toml", "rb") as f:
+        data = tomli.load(f)
+    project = data.get("project", {})
+    return project
 
 # 主安装配置
 if __name__ == "__main__":
+    # 读取项目信息
+    project_info = get_project_info()
+    
     setup(
-        name=metadata.__name__,
+        name=project_info.get("name", "twitter-dm-static"),
         version=get_version(),
-        author=metadata.__author__,
-        author_email=metadata.__email__,
-        description=metadata.__description__,
+        author=project_info.get("authors", [{}])[0].get("name", ""),
+        author_email=project_info.get("authors", [{}])[0].get("email", ""),
+        description=project_info.get("description", ""),
         long_description=get_long_description(),
         long_description_content_type="text/markdown",
-        url=metadata.__url__,
-        license=metadata.__license__,
+        url=project_info.get("urls", {}).get("Homepage", ""),
+        license="MIT",
 
-        # Python 包配置
-        packages=["twitter_dm"],  # 包含 twitter_dm Python 包
+        # 不再包含Python包
+        # packages=["twitter_dm"],
 
         # C++ 扩展模块（由 CMake 构建）
         ext_modules=get_extensions(),
         cmdclass={"build_ext": CustomBuildExt},
 
         # Python 版本要求
-        python_requires=metadata.__requires_python__,
+        python_requires=project_info.get("requires-python", ">=3.8"),
 
         # 运行时依赖
-        install_requires=metadata.__dependencies__,
+        install_requires=project_info.get("dependencies", []),
 
         # 开发依赖
-        extras_require={
-            "dev": metadata.__dev_dependencies__,
-        },
+        extras_require=project_info.get("optional-dependencies", {}),
 
         # 分类信息
-        classifiers=metadata.__classifiers__,
+        classifiers=project_info.get("classifiers", []),
 
         # 包含数据文件
         include_package_data=True,

@@ -23,12 +23,12 @@ include twitter_dm.h
 # 包含外部依赖（如果需要）
 recursive-include extern *
 
-# 包含 Python 包文件
-recursive-include twitter_dm *.py
-
 # 包含数据文件
 include *.txt
 include user_ids.txt
+
+# 明确包含编译后的库文件
+include *.so *.pyd *.dylib *.dll
 
 # 排除不需要的文件
 exclude .gitignore
@@ -47,5 +47,5 @@ global-exclude *.pyo
 # global-exclude *.dll
 global-exclude .DS_Store
 
-# 明确包含编译后的库文件
-recursive-include twitter_dm *.so *.pyd *.dylib *.dll
+# 不再需要包含twitter_dm目录中的库文件
+# recursive-include twitter_dm *.so *.pyd *.dylib *.dll

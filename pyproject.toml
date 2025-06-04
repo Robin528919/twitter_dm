@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "twitter-dm-static"
-version = "0.1.1"
+version = "0.1.4"  # 更新为metadata.py中的版本
 description = "Twitter DM static analysis tool with C++ backend"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -43,30 +43,12 @@ Homepage = "https://github.com/yourusername/twitter-dm-static"
 Repository = "https://github.com/yourusername/twitter-dm-static.git"
 Issues = "https://github.com/yourusername/twitter-dm-static/issues"
 
-[tool.setuptools.package-dir]
-"" = "."
-
-[tool.setuptools.packages.find]
-where = [
-    ".",
-]
-include = [
-    "twitter_dm*",
-]
-exclude = [
-    "test*",
-    "build*",
-    "extern*",
-]
+# 不再使用包目录，直接将扩展模块安装到根目录
+[tool.setuptools]
+py-modules = []  # 不包含任何Python模块
 
 [tool.setuptools.package-data]
-"*" = [
-    "*.so",
-    "*.pyd",
-    "*.dll",
-    "*.dylib",
-]
-twitter_dm = [
+"" = [
     "*.so",
     "*.pyd",
     "*.dll",
