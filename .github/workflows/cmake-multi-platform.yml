@@ -203,6 +203,45 @@ jobs:
         # 使用build构建wheel包
         python -m build --wheel
         
+        # 修复Linux wheel包的平台标签
+        if ls dist/*linux_x86_64.whl 1> /dev/null 2>&1; then
+          echo "修复Linux wheel包的平台标签..."
+          pip install wheel auditwheel || pip install wheel
+          
+          # 创建临时目录
+          mkdir -p temp_wheel_fix
+          
+          for wheel_file in dist/*linux_x86_64.whl; do
+            echo "处理wheel文件: $wheel_file"
+            
+            # 解压wheel文件
+            wheel unpack "$wheel_file" -d temp_wheel_fix/
+            
+            # 获取解压后的目录名
+            unpacked_dir=$(find temp_wheel_fix -maxdepth 1 -type d -name "*" | grep -v "^temp_wheel_fix$" | head -1)
+            
+            if [ -n "$unpacked_dir" ]; then
+              # 修改WHEEL文件中的平台标签
+              wheel_metadata="$unpacked_dir"/*.dist-info/WHEEL
+              if [ -f "$wheel_metadata" ]; then
+                sed -i 's/Tag: cp[0-9]*-cp[0-9]*-linux_x86_64/Tag: cp312-cp312-manylinux1_x86_64/' "$wheel_metadata"
+                echo "已修改WHEEL元数据文件: $wheel_metadata"
+              fi
+              
+              # 重新打包wheel
+              new_name=$(echo "$wheel_file" | sed 's/linux_x86_64/manylinux1_x86_64/')
+              wheel pack "$unpacked_dir" -d dist/
+              
+              # 删除原始wheel文件
+              rm "$wheel_file"
+              echo "重新打包完成: $new_name"
+            fi
+          done
+          
+          # 清理临时目录
+          rm -rf temp_wheel_fix
+        fi
+        
         # 列出生成的wheel包
         echo "生成的wheel包:"
         ls -la dist/
