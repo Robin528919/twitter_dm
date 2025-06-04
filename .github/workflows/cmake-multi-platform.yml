@@ -23,7 +23,7 @@ jobs:
       #
       # 要添加更多构建类型（Release、Debug、RelWithDebInfo 等），请自定义 build_type 列表。
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         build_type: [Release]
         c_compiler: [gcc, clang, cl]
         include:
@@ -36,12 +36,24 @@ jobs:
           - os: ubuntu-latest
             c_compiler: clang
             cpp_compiler: clang++
+          - os: macos-latest
+            c_compiler: clang
+            cpp_compiler: clang++
+            target_arch: x86_64
+          - os: macos-latest
+            c_compiler: clang
+            cpp_compiler: clang++
+            target_arch: arm64
         exclude:
           - os: windows-latest
             c_compiler: gcc
           - os: windows-latest
             c_compiler: clang
           - os: ubuntu-latest
+            c_compiler: cl
+          - os: macos-latest
+            c_compiler: gcc
+          - os: macos-latest
             c_compiler: cl
 
     steps:
@@ -92,6 +104,8 @@ jobs:
     - name: Configure CMake
       # 在 'build' 子目录中配置 CMake。只有在使用单配置生成器（如 make）时才需要 `CMAKE_BUILD_TYPE`。
       # 参见 https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      env:
+        TARGET_ARCH: ${{ matrix.target_arch }}
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
@@ -113,7 +127,7 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: build-artifacts-${{ matrix.os }}-${{ matrix.c_compiler }}
+        name: build-artifacts-${{ matrix.os }}-${{ matrix.c_compiler }}${{ matrix.target_arch && format('-{0}', matrix.target_arch) || '' }}
         path: |
           ${{ steps.strings.outputs.build-output-dir }}
         if-no-files-found: warn

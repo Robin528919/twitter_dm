@@ -3,6 +3,20 @@ cmake_policy(SET CMP0148 NEW)
 project(twitter_dm)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# 检查是否需要为macOS ARM架构构建
+if(APPLE)
+  # 检查是否设置了TARGET_ARCH环境变量
+  if(DEFINED ENV{TARGET_ARCH})
+    if("$ENV{TARGET_ARCH}" STREQUAL "arm64")
+      set(CMAKE_OSX_ARCHITECTURES "arm64")
+      message(STATUS "为macOS ARM架构(Apple Silicon)构建")
+    elseif("$ENV{TARGET_ARCH}" STREQUAL "x86_64")
+      set(CMAKE_OSX_ARCHITECTURES "x86_64")
+      message(STATUS "为macOS x86_64架构(Intel)构建")
+    endif()
+  endif()
+endif()
 # 添加一个选项来控制 Python 环境
 option(USE_LOCAL_PYTHON_ENV "使用本地 Python 环境" OFF)
 
