@@ -185,9 +185,6 @@ jobs:
         # 复制构建工件到根目录
         echo "复制构建工件到根目录..."
         find artifacts -type f \( -name "*.so" -o -name "*.dylib" -o -name "*.dll" -o -name "*.pyd" \) | xargs -I{} cp {} ./
-#        # 单独处理可能是目录的libcpr、libcurl和libz
-#        find artifacts -type f \( -name "libcpr*" -o -name "libcurl*" -o -name "libz*" \) -not -path "*/CMakeFiles/*" -not -path "*/docs/*" | xargs -I{} cp {} ./ 2>/dev/null || true
-#
         # 列出根目录中的文件
         echo "根目录中的文件:"
         ls -la *.so *.dylib *.dll *.pyd 2>/dev/null || echo "没有找到扩展模块文件"
