@@ -116,34 +116,26 @@ install(TARGETS ${PROJECT_NAME} DESTINATION .)
 
 # 安装依赖的动态库
 if(APPLE OR UNIX)
-    # 安装CPR库
-    if(UNIX AND NOT APPLE)
-        # 在Linux上，安装CPR库及其符号链接
-        install(TARGETS cpr::cpr DESTINATION .)
-        
-        # 创建符号链接
-        install(CODE "
-            execute_process(
-                COMMAND ${CMAKE_COMMAND} -E create_symlink 
-                libcpr.so 
-                \${CMAKE_INSTALL_PREFIX}/libcpr.so.1
-            )
-        ")
-    else()
-        # 在macOS上，使用生成器表达式获取CPR库的位置
-        set(CPR_LIBRARY $<TARGET_FILE:cpr::cpr>)
-        install(FILES ${CPR_LIBRARY} DESTINATION .)
-    endif()
-    
-    # 安装CURL库
-    if(UNIX AND NOT APPLE)
-        # 在Linux上，安装CURL库及其符号链接
-        install(TARGETS CURL::libcurl DESTINATION .)
-    else()
-        # 在macOS上，使用生成器表达式获取CURL库的位置
-        set(CURL_LIBRARY $<TARGET_FILE:CURL::libcurl>)
-        install(FILES ${CURL_LIBRARY} DESTINATION .)
-    endif()
+# 安装CPR库
+# 使用生成器表达式获取CPR库的位置
+set(CPR_LIBRARY $<TARGET_FILE:cpr::cpr>)
+install(FILES ${CPR_LIBRARY} DESTINATION .)
+
+# 在Linux上，创建libcpr.so.1符号链接
+if(UNIX AND NOT APPLE)
+    install(CODE "
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} -E create_symlink 
+            libcpr.so 
+            \${CMAKE_INSTALL_PREFIX}/libcpr.so.1
+        )
+    ")
+endif()
+
+# 安装CURL库
+# 使用生成器表达式获取CURL库的位置
+set(CURL_LIBRARY $<TARGET_FILE:CURL::libcurl>)
+install(FILES ${CURL_LIBRARY} DESTINATION .)
     
     # 安装ZLIB库（如果需要）
     find_package(ZLIB)
