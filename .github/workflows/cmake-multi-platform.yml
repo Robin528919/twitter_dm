@@ -228,13 +228,19 @@ jobs:
                 echo "已修改WHEEL元数据文件: $wheel_metadata"
               fi
               
-              # 重新打包wheel
-              new_name=$(echo "$wheel_file" | sed 's/linux_x86_64/manylinux1_x86_64/')
-              wheel pack "$unpacked_dir" -d dist/
-              
               # 删除原始wheel文件
               rm "$wheel_file"
-              echo "重新打包完成: $new_name"
+              
+              # 重新打包wheel，使用正确的文件名
+              wheel pack "$unpacked_dir" -d dist/
+              
+              # 重命名生成的wheel文件
+              original_name=$(basename "$wheel_file")
+              new_name=$(echo "$original_name" | sed 's/linux_x86_64/manylinux1_x86_64/')
+              if [ -f "dist/$original_name" ]; then
+                mv "dist/$original_name" "dist/$new_name"
+              fi
+              echo "重新打包完成: dist/$new_name"
             fi
           done
           
@@ -249,8 +255,18 @@ jobs:
         # 检查wheel包内容
         echo "检查wheel包内容:"
         pip install wheel
-        wheel unpack dist/*.whl
-        find twitter_dm_static* -type f | sort
+        # 检查是否有wheel文件存在
+        if ls dist/*.whl 1> /dev/null 2>&1; then
+          for whl_file in dist/*.whl; do
+            echo "解压wheel文件: $whl_file"
+            wheel unpack "$whl_file"
+          done
+          echo "wheel包内容:"
+          find twitter_dm_static* -type f | sort 2>/dev/null || echo "未找到解压的wheel内容"
+        else
+          echo "错误: 未找到任何wheel文件"
+          ls -la dist/
+        fi
     
     # 构建源码分发包
     - name: Build sdist
