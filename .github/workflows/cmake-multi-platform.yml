@@ -227,7 +227,7 @@ jobs:
         # 上传前验证元数据
         verify-metadata: true
         # 如果包已存在则跳过（避免重复上传失败）
-        skip-existing: false
+        skip-existing: true
         # 显示详细输出
         verbose: true
         # 显示文件哈希值
