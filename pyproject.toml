@@ -48,7 +48,7 @@ Issues = "https://github.com/yourusername/twitter-dm-static/issues"
 py-modules = []  # 不包含任何Python模块
 
 [tool.setuptools.package-data]
-"" = [
+"*" = [
     "*.so",
     "*.pyd",
     "*.dll",
