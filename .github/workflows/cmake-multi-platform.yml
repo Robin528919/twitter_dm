@@ -16,20 +16,17 @@ jobs:
       # 将 fail-fast 设置为 false 以确保为所有矩阵组合提供反馈。当您的工作流稳定时，请考虑将其更改为 true。
       fail-fast: false
 
-      # 设置矩阵以运行以下 3 种配置：
-      # 1. <Windows, Release, 默认运行器镜像上的最新 MSVC 编译器工具链，默认生成器>
-      # 2. <Linux, Release, 默认运行器镜像上的最新 GCC 编译器工具链，默认生成器>
-      # 3. <Linux, Release, 默认运行器镜像上的最新 Clang 编译器工具链，默认生成器>
+      # 设置矩阵以运行以下配置：
+      # 1. <Linux, Release, 默认运行器镜像上的最新 GCC 编译器工具链，默认生成器>
+      # 2. <Linux, Release, 默认运行器镜像上的最新 Clang 编译器工具链，默认生成器>
+      # 3. <macOS, Release, 默认运行器镜像上的最新 Clang 编译器工具链，默认生成器>
       #
       # 要添加更多构建类型（Release、Debug、RelWithDebInfo 等），请自定义 build_type 列表。
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
         build_type: [Release]
-        c_compiler: [gcc, clang, cl]
+        c_compiler: [gcc, clang]
         include:
-          - os: windows-latest
-            c_compiler: cl
-            cpp_compiler: cl
           - os: ubuntu-latest
             c_compiler: gcc
             cpp_compiler: g++
@@ -45,10 +42,6 @@ jobs:
             cpp_compiler: clang++
             target_arch: arm64
         exclude:
-          - os: windows-latest
-            c_compiler: gcc
-          - os: windows-latest
-            c_compiler: clang
           - os: ubuntu-latest
             c_compiler: cl
           - os: macos-latest
@@ -102,7 +95,7 @@ jobs:
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
     - name: Configure CMake
-      # 在 'build' 子目录中配置 CMake。只有在使用单配置生成器（如 make）时才需要 `CMAKE_BUILD_TYPE`。
+      # 在 'build' 子目录中配置 CMake
       # 参见 https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       env:
         TARGET_ARCH: ${{ matrix.target_arch }}
@@ -114,12 +107,12 @@ jobs:
         -S ${{ github.workspace }}
 
     - name: Build
-      # 使用给定配置构建您的程序。请注意，需要 --config 是因为默认的 Windows 生成器是多配置生成器（Visual Studio 生成器）。
+      # 使用给定配置构建您的程序
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      # 执行由 CMake 配置定义的测试。请注意，需要 --build-config 是因为默认的 Windows 生成器是多配置生成器（Visual Studio 生成器）。
+      # 执行由 CMake 配置定义的测试
       # 更多详细信息请参见 https://cmake.org/cmake/help/latest/manual/ctest.1.html
       run: ctest --build-config ${{ matrix.build_type }}
       

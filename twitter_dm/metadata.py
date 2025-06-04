@@ -9,7 +9,7 @@ Twitter DM Static Analysis Tool - 元数据文件
 
 # 项目元数据
 __name__ = "twitter-dm-static"
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __author__ = "robin"
 __email__ = "robin528919@gmail.com"
 __description__ = "Twitter DM static analysis tool with C++ backend"
