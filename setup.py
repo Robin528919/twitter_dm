@@ -284,8 +284,12 @@ class CustomBuildExt(build_ext):
                     "libz" in src_file.name):
                     # 复制到构建目录的根目录
                     dst_file = dst_dir / src_file.name
-                    shutil.copy2(src_file, dst_file)
-                    print(f"复制文件: {src_file} -> {dst_file}")
+                    # 检查源文件和目标文件是否相同，避免原地复制错误
+                    if src_file.resolve() != dst_file.resolve():
+                        shutil.copy2(src_file, dst_file)
+                        print(f"复制文件: {src_file} -> {dst_file}")
+                    else:
+                        print(f"跳过复制相同文件: {src_file}")
                     found_files = True
         
         # 如果没有找到任何文件，打印警告
