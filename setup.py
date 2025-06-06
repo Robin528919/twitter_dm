@@ -233,6 +233,7 @@ class CustomBuildExt(build_ext):
             "-DCMAKE_BUILD_TYPE=Release",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             "-DUSE_LOCAL_PYTHON_ENV=ON",
+            "-DCMAKE_CXX_FLAGS_RELEASE=-O3",  # 添加 Release 模式的 CXX 优化级别
         ]
 
         # 运行 CMake 配置
@@ -243,11 +244,18 @@ class CustomBuildExt(build_ext):
                        ] + cmake_args, check=True)
 
         # 运行 CMake 构建
-        subprocess.run([
+        # 获取CPU核心数，用于并行编译
+        import os
+        cpu_count = os.cpu_count() or 1 # 如果获取失败，默认为1
+        build_args = [
             "cmake",
             "--build", str(build_dir),
-            "--config", "Release"
-        ], check=True)
+            "--config", "Release",
+            "--", # 将后续参数传递给底层构建系统 (例如 Make 或 Ninja)
+            f"-j{cpu_count}" # 并行构建
+        ]
+        print(f"使用 {cpu_count} 个核心进行并行构建: {' '.join(build_args)}")
+        subprocess.run(build_args, check=True)
 
 
 
