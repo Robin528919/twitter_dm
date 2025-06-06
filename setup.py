@@ -248,6 +248,10 @@ class CustomBuildExt(build_ext):
         # 查找生成的库文件并复制到正确位置
         self._copy_built_extensions(build_dir)
 
+        # 新增: 如果是 Linux 系统，在复制完文件后修复 RPATH
+        if sys.platform.startswith('linux'):
+            self._fix_rpath_linux(Path(self.build_lib)) # self.build_lib 是复制的目标目录
+
     def _copy_built_extensions(self, build_dir):
         """
         复制构建好的扩展模块到安装目录
@@ -301,6 +305,70 @@ class CustomBuildExt(build_ext):
             for file in all_files:
                 if file.is_file():
                     print(f"  {file}")
+
+    def _fix_rpath_linux(self, install_dir: Path):
+        """
+        在 Linux 上修复 .so 文件的 RPATH，将其设置为 $ORIGIN。
+        这有助于主扩展模块在其安装目录中找到其依赖的共享库。
+
+        Args:
+            install_dir (Path): 包含已安装 .so 文件的目录 (通常是 self.build_lib)。
+        """
+        import subprocess # 方法内导入 subprocess
+        import glob     # 方法内导入 glob
+
+        print(f"尝试在 Linux 上修复 RPATH，目标目录: {install_dir}")
+        
+        # 查找主扩展模块，通常命名为 <package_name>*.so
+        # Extension(name="twitter_dm", ...) -> twitter_dm*.so
+        main_module_candidates = list(install_dir.glob("twitter_dm*.so"))
+
+        if not main_module_candidates:
+            print(f"警告: 在 {install_dir} 中未找到 twitter_dm*.so 主模块文件，跳过 RPATH 设置。")
+            return
+
+        for so_file in main_module_candidates:
+            if so_file.is_file():
+                print(f"为 {so_file.name} 设置 RPATH 为 $ORIGIN")
+                try:
+                    # 检查 patchelf 是否可用
+                    patchelf_check = subprocess.run(["patchelf", "--version"], check=False, capture_output=True, text=True)
+                    if patchelf_check.returncode != 0:
+                        print(f"警告: patchelf 命令执行失败 (返回码: {patchelf_check.returncode}) 或未找到。无法为 {so_file.name} 设置 RPATH.")
+                        if patchelf_check.stderr:
+                            print(f"  patchelf 错误信息: {patchelf_check.stderr.strip()}")
+                        elif patchelf_check.stdout:
+                            print(f"  patchelf 输出信息: {patchelf_check.stdout.strip()}")
+                        continue # 跳过此文件的 RPATH 设置
+                    
+                    # 设置 RPATH 为 $ORIGIN，这样它会在自己的目录中查找依赖
+                    # 注意：$ORIGIN 需要被 shell 解释，或者 patchelf 直接支持它
+                    # 在 subprocess.run 中，如果 shell=False (默认)，特殊字符如 $ 不会被 shell 扩展
+                    # patchelf 工具自身能够理解 '$ORIGIN'
+                    result = subprocess.run(
+                        ["patchelf", "--set-rpath", "$ORIGIN", str(so_file)],
+                        check=True, # 如果 patchelf 失败则抛出异常
+                        capture_output=True,
+                        text=True
+                    )
+                    print(f"成功为 {so_file.name} 设置 RPATH 为 $ORIGIN")
+                    if result.stdout:
+                        print(f"  patchelf 输出: {result.stdout.strip()}")
+                    if result.stderr: # 通常成功时 stderr 为空
+                        print(f"  patchelf 警告/错误: {result.stderr.strip()}")
+
+                except FileNotFoundError:
+                    print(f"警告: patchelf 命令未找到。无法为 {so_file.name} 设置 RPATH。请确保 patchelf 已安装并位于 PATH 中。")
+                except subprocess.CalledProcessError as e:
+                    print(f"警告: 使用 patchelf 为 {so_file.name} 设置 RPATH 失败。")
+                    print(f"  命令: {' '.join(e.cmd)}")
+                    print(f"  返回码: {e.returncode}")
+                    if e.stdout:
+                        print(f"  输出: {e.stdout.strip()}")
+                    if e.stderr:
+                        print(f"  错误: {e.stderr.strip()}")
+            else:
+                print(f"警告: 找到的路径 {so_file} 不是文件，跳过 RPATH 设置。")
 
 # 从pyproject.toml读取项目信息
 def get_project_info():

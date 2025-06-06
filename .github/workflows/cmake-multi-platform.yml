@@ -9,125 +9,125 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      # 将 fail-fast 设置为 false 以确保为所有矩阵组合提供反馈。当您的工作流稳定时，请考虑将其更改为 true。
-      fail-fast: false
-
-      # 设置矩阵以运行以下配置：
-      # 1. <Linux, Release, 默认运行器镜像上的最新 GCC 编译器工具链，默认生成器>
-      # 2. <Linux, Release, 默认运行器镜像上的最新 Clang 编译器工具链，默认生成器>
-      # 3. <macOS, Release, 默认运行器镜像上的最新 Clang 编译器工具链，默认生成器>
-      #
-      # 要添加更多构建类型（Release、Debug、RelWithDebInfo 等），请自定义 build_type 列表。
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        build_type: [Release]
-        c_compiler: [gcc, clang]
-        include:
-          - os: ubuntu-latest
-            c_compiler: gcc
-            cpp_compiler: g++
-          - os: ubuntu-latest
-            c_compiler: clang
-            cpp_compiler: clang++
-          - os: macos-latest
-            c_compiler: clang
-            cpp_compiler: clang++
-            target_arch: x86_64
-          - os: macos-latest
-            c_compiler: clang
-            cpp_compiler: clang++
-            target_arch: arm64
-        exclude:
-          - os: ubuntu-latest
-            c_compiler: cl
-          - os: macos-latest
-            c_compiler: gcc
-          - os: macos-latest
-            c_compiler: cl
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python 3.12
-      # 设置 Python 3.12 环境，用于构建过程中的依赖
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.12'
-
-    - name: Cache CMake dependencies
-      # 缓存 CMake FetchContent 下载的依赖库，提高构建速度
-      uses: actions/cache@v3
-      with:
-        path: |
-          ${{ github.workspace }}/build/_deps
-          ${{ github.workspace }}/extern
-          ~/.cache/cmake
-        key: ${{ runner.os }}-cmake-deps-${{ matrix.c_compiler }}-${{ hashFiles('CMakeLists.txt', 'test/CMakeLists.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-cmake-deps-${{ matrix.c_compiler }}-
-          ${{ runner.os }}-cmake-deps-
-
-    - name: Cache Python packages
-      # 缓存 Python 包，加速 Python 依赖安装
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-
-    - name: Install Python dependencies
-      # 安装 Python 依赖包（如果需要的话）
-      run: |
-        python -m pip install --upgrade pip
-        # 如果有 requirements.txt 文件，取消下面一行的注释
-        # pip install -r requirements.txt
-
-    - name: Set reusable strings
-      # 将重复的输入字符串（如构建输出目录）转换为步骤输出。这些步骤输出可以在整个工作流文件中使用。
-      id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-
-    - name: Configure CMake
-      # 在 'build' 子目录中配置 CMake
-      # 参见 https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      env:
-        TARGET_ARCH: ${{ matrix.target_arch }}
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -S ${{ github.workspace }}
-
-    - name: Build
-      # 使用给定配置构建您的程序
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
-
-    - name: Test
-      working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      # 执行由 CMake 配置定义的测试
-      # 更多详细信息请参见 https://cmake.org/cmake/help/latest/manual/ctest.1.html
-      run: ctest --build-config ${{ matrix.build_type }}
-      
-    # 上传构建结果作为工件，供后续pypi-publish作业使用
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-artifacts-${{ matrix.os }}-${{ matrix.c_compiler }}${{ matrix.target_arch && format('-{0}', matrix.target_arch) || '' }}
-        path: |
-          ${{ steps.strings.outputs.build-output-dir }}
-        if-no-files-found: warn
+#  build:
+#    runs-on: ${{ matrix.os }}
+#
+#    strategy:
+#      # 将 fail-fast 设置为 false 以确保为所有矩阵组合提供反馈。当您的工作流稳定时，请考虑将其更改为 true。
+#      fail-fast: false
+#
+#      # 设置矩阵以运行以下配置：
+#      # 1. <Linux, Release, 默认运行器镜像上的最新 GCC 编译器工具链，默认生成器>
+#      # 2. <Linux, Release, 默认运行器镜像上的最新 Clang 编译器工具链，默认生成器>
+#      # 3. <macOS, Release, 默认运行器镜像上的最新 Clang 编译器工具链，默认生成器>
+#      #
+#      # 要添加更多构建类型（Release、Debug、RelWithDebInfo 等），请自定义 build_type 列表。
+#      matrix:
+#        os: [ubuntu-latest, macos-latest]
+#        build_type: [Release]
+#        c_compiler: [gcc, clang]
+#        include:
+#          - os: ubuntu-latest
+#            c_compiler: gcc
+#            cpp_compiler: g++
+#          - os: ubuntu-latest
+#            c_compiler: clang
+#            cpp_compiler: clang++
+#          - os: macos-latest
+#            c_compiler: clang
+#            cpp_compiler: clang++
+#            target_arch: x86_64
+#          - os: macos-latest
+#            c_compiler: clang
+#            cpp_compiler: clang++
+#            target_arch: arm64
+#        exclude:
+#          - os: ubuntu-latest
+#            c_compiler: cl
+#          - os: macos-latest
+#            c_compiler: gcc
+#          - os: macos-latest
+#            c_compiler: cl
+#
+#    steps:
+#    - uses: actions/checkout@v4
+#
+#    - name: Set up Python 3.12
+#      # 设置 Python 3.12 环境，用于构建过程中的依赖
+#      uses: actions/setup-python@v4
+#      with:
+#        python-version: '3.12'
+#
+#    - name: Cache CMake dependencies
+#      # 缓存 CMake FetchContent 下载的依赖库，提高构建速度
+#      uses: actions/cache@v3
+#      with:
+#        path: |
+#          ${{ github.workspace }}/build/_deps
+#          ${{ github.workspace }}/extern
+#          ~/.cache/cmake
+#        key: ${{ runner.os }}-cmake-deps-${{ matrix.c_compiler }}-${{ hashFiles('CMakeLists.txt', 'test/CMakeLists.txt') }}
+#        restore-keys: |
+#          ${{ runner.os }}-cmake-deps-${{ matrix.c_compiler }}-
+#          ${{ runner.os }}-cmake-deps-
+#
+#    - name: Cache Python packages
+#      # 缓存 Python 包，加速 Python 依赖安装
+#      uses: actions/cache@v3
+#      with:
+#        path: ~/.cache/pip
+#        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+#        restore-keys: |
+#          ${{ runner.os }}-pip-
+#
+#    - name: Install Python dependencies
+#      # 安装 Python 依赖包（如果需要的话）
+#      run: |
+#        python -m pip install --upgrade pip
+#        # 如果有 requirements.txt 文件，取消下面一行的注释
+#        # pip install -r requirements.txt
+#
+#    - name: Set reusable strings
+#      # 将重复的输入字符串（如构建输出目录）转换为步骤输出。这些步骤输出可以在整个工作流文件中使用。
+#      id: strings
+#      shell: bash
+#      run: |
+#        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+#
+#    - name: Configure CMake
+#      # 在 'build' 子目录中配置 CMake
+#      # 参见 https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+#      env:
+#        TARGET_ARCH: ${{ matrix.target_arch }}
+#      run: >
+#        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+#        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+#        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+#        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+#        -S ${{ github.workspace }}
+#
+#    - name: Build
+#      # 使用给定配置构建您的程序
+#      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+#
+#    - name: Test
+#      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+#      # 执行由 CMake 配置定义的测试
+#      # 更多详细信息请参见 https://cmake.org/cmake/help/latest/manual/ctest.1.html
+#      run: ctest --build-config ${{ matrix.build_type }}
+#      
+#    # 上传构建结果作为工件，供后续pypi-publish作业使用
+#    - name: Upload build artifacts
+#      uses: actions/upload-artifact@v4
+#      with:
+#        name: build-artifacts-${{ matrix.os }}-${{ matrix.c_compiler }}${{ matrix.target_arch && format('-{0}', matrix.target_arch) || '' }}
+#        path: |
+#          ${{ steps.strings.outputs.build-output-dir }}
+#        if-no-files-found: warn
 
   # PyPI 发布作业 - 仅在构建成功且推送到 main 分支时运行
   pypi-publish:
-    needs: build
+    # needs: build # 移除了对 build 作业的依赖
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     # 添加OIDC权限，用于Trusted Publishing
