@@ -71,10 +71,10 @@ class CustomBuildExt(build_ext):
         2. 如果存在 CMakeLists.txt，使用 CMake 构建
         3. 否则使用标准的 setuptools 构建过程
         """
-        # 首先检查预编译的库文件
-        if self._check_and_use_precompiled():
-            print("使用预编译的库文件")
-            return
+        # # 首先检查预编译的库文件
+        # if self._check_and_use_precompiled():
+        #     print("使用预编译的库文件")
+        #     return
 
         cmake_file = project_root / "CMakeLists.txt"
         if cmake_file.exists():
