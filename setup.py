@@ -254,57 +254,105 @@ class CustomBuildExt(build_ext):
 
     def _copy_built_extensions(self, build_dir):
         """
-        复制构建好的扩展模块到安装目录
-        
+        复制构建好的扩展模块和依赖项（包括符号链接）到安装目录。
+
         Args:
-            build_dir (Path): CMake 构建目录
+            build_dir (Path): CMake 构建目录。
         """
-        # 查找生成的扩展文件
+        import os # 导入 os 模块以处理符号链接
+
+        # 查找生成的扩展文件和依赖库
+        # 我们需要更精确地匹配，并处理符号链接
+        # 模式应该能匹配到如 libcpr.so, libcpr.so.1, twitter_dm.cpython-312-x86_64-linux-gnu.so 等
         patterns = [
-            "twitter_dm*.so",  # Linux/macOS
-            "twitter_dm*.pyd",  # Windows
-            "twitter_dm*.dylib",  # macOS 动态库
-            "*.dll",  # Windows动态库
-            "*.so",  # 更通用的模式，以防文件名不完全匹配
-            "*.pyd",
-            "*.dylib",
+            "twitter_dm*.so",
+            "twitter_dm*.pyd",
+            "twitter_dm*.dylib",
+            "libcpr*", # 匹配 libcpr.so, libcpr.so.1, libcpr.dylib 等
+            "libcurl*",
+            "libz*",
+            # 对于 Windows，可能还需要 .dll 文件，但当前问题主要在 Linux
         ]
 
-        # 确保目标目录存在 - 直接使用根目录，不再使用twitter_dm子目录
+        # 确保目标目录存在
         dst_dir = Path(self.build_lib)
         dst_dir.mkdir(parents=True, exist_ok=True)
-        
-        # 记录是否找到了任何文件
-        found_files = False
+        print(f"目标安装目录: {dst_dir}")
 
+        found_any_files = False
+        copied_files_map = {} # 用于跟踪已复制的真实文件，以便符号链接可以指向它们
+
+        # 收集所有匹配的文件和符号链接
+        all_candidate_paths = []
         for pattern in patterns:
-            files = list(build_dir.glob(f"**/{pattern}"))
-            for src_file in files:
-                # 复制扩展模块和依赖库
-                if ("twitter_dm" in src_file.name or 
-                    "twitter-dm" in src_file.name or
-                    "libcpr" in src_file.name or
-                    "libcurl" in src_file.name or
-                    "libz" in src_file.name):
-                    # 复制到构建目录的根目录
-                    dst_file = dst_dir / src_file.name
-                    # 检查源文件和目标文件是否相同，避免原地复制错误
-                    if src_file.resolve() != dst_file.resolve():
-                        shutil.copy2(src_file, dst_file)
-                        print(f"复制文件: {src_file} -> {dst_file}")
-                    else:
-                        print(f"跳过复制相同文件: {src_file}")
-                    found_files = True
+            # 使用 rglob 递归搜索
+            all_candidate_paths.extend(list(build_dir.rglob(pattern)))
         
-        # 如果没有找到任何文件，打印警告
-        if not found_files:
-            print("警告: 未找到任何扩展模块文件！")
-            print(f"搜索目录: {build_dir}")
-            print("尝试列出构建目录中的所有文件:")
-            all_files = list(build_dir.glob("**/*"))
-            for file in all_files:
-                if file.is_file():
-                    print(f"  {file}")
+        # 去重并保留原始 Path 对象
+        unique_candidate_paths = sorted(list(set(all_candidate_paths)), key=lambda p: str(p))
+
+        print(f"在 {build_dir} 中找到的候选文件/符号链接:")
+        for p in unique_candidate_paths:
+            print(f"  - {p} ({'符号链接' if p.is_symlink() else '文件'})")
+
+        # 首先复制所有真实文件
+        for src_path in unique_candidate_paths:
+            if not src_path.is_symlink() and src_path.is_file():
+                # 只复制我们关心的库和扩展
+                if any(lib_name in src_path.name for lib_name in ["twitter_dm", "libcpr", "libcurl", "libz"]):
+                    dst_file_path = dst_dir / src_path.name
+                    if dst_file_path.exists() and src_path.resolve() == dst_file_path.resolve():
+                        print(f"源文件 {src_path} 和目标文件 {dst_file_path} 是同一个文件，跳过复制。")
+                    else:
+                        if dst_file_path.exists() or dst_file_path.is_symlink():
+                            print(f"目标 {dst_file_path} 已存在，正在移除...")
+                            dst_file_path.unlink()
+                        shutil.copy2(src_path, dst_file_path) # copy2 保留元数据
+                        print(f"已复制文件: {src_path} -> {dst_file_path}")
+                        copied_files_map[src_path.name] = dst_file_path.name # 记录复制的文件名
+                    found_any_files = True
+
+        # 然后创建所有符号链接，确保它们指向目标目录中的对应文件
+        for src_path in unique_candidate_paths:
+            if src_path.is_symlink():
+                # 只处理我们关心的库的符号链接
+                if any(lib_name in src_path.name for lib_name in ["twitter_dm", "libcpr", "libcurl", "libz"]):
+                    dst_symlink_path = dst_dir / src_path.name
+                    original_target_str = os.readlink(src_path) # 符号链接指向的原始目标字符串
+                    original_target_name = Path(original_target_str).name # 获取目标的文件名部分
+
+                    print(f"处理符号链接: {src_path} -> {original_target_str}")
+
+                    # 符号链接应该指向目标目录中已复制的对应文件
+                    # 如果原始目标（例如 libcpr.so）已经被复制到了 dst_dir，我们就链接到它在 dst_dir 中的名字
+                    link_to_in_dst = copied_files_map.get(original_target_name, original_target_name)
+                    
+                    if dst_symlink_path.exists() or dst_symlink_path.is_symlink():
+                        print(f"目标符号链接 {dst_symlink_path} 已存在，正在移除...")
+                        dst_symlink_path.unlink()
+                    
+                    try:
+                        os.symlink(link_to_in_dst, dst_symlink_path)
+                        print(f"已创建符号链接: {dst_symlink_path} -> {link_to_in_dst}")
+                        found_any_files = True
+                    except Exception as e:
+                        print(f"创建符号链接 {dst_symlink_path} -> {link_to_in_dst} 失败: {e}")
+                        # 尝试打印更多调试信息
+                        print(f"  源符号链接: {src_path}")
+                        print(f"  原始目标: {original_target_str}")
+                        print(f"  解析的目标文件名: {original_target_name}")
+                        print(f"  期望链接到的目标目录中的文件名: {link_to_in_dst}")
+                        print(f"  目标符号链接路径: {dst_symlink_path}")
+                        print(f"  当前工作目录: {Path.cwd()}")
+                        print(f"  目标目录内容: {list(dst_dir.iterdir())}")
+
+
+        if not found_any_files:
+            print(f"警告: 在构建目录 {build_dir} 中未找到或复制任何预期的扩展模块或库文件。")
+            print(f"  搜索模式: {patterns}")
+            print(f"  尝试列出构建目录 {build_dir} 中的所有文件和符号链接:")
+            for item in build_dir.rglob("*"):
+                print(f"    - {item} ({'符号链接' if item.is_symlink() else ('目录' if item.is_dir() else '文件')})")
 
     def _fix_rpath_linux(self, install_dir: Path):
         """

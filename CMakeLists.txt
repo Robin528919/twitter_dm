@@ -96,71 +96,71 @@ target_link_libraries(twitter_dm_lib PUBLIC cpr::cpr nlohmann_json::nlohmann_jso
 pybind11_add_module(${PROJECT_NAME} MODULE bindings.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE twitter_dm_lib)
 
-# 设置RPATH，使Python扩展模块能够找到依赖的动态库
-if(APPLE)
-    # 在macOS上，设置RPATH为@loader_path，这样扩展模块可以在同一目录中查找动态库
-    set_target_properties(${PROJECT_NAME} PROPERTIES 
-        INSTALL_RPATH "@loader_path"
-        BUILD_WITH_INSTALL_RPATH TRUE
-    )
-elseif(UNIX AND NOT APPLE)
-    # 在Linux上，设置RPATH为$ORIGIN，这样扩展模块可以在同一目录中查找动态库
-    set_target_properties(${PROJECT_NAME} PROPERTIES 
-        INSTALL_RPATH "$ORIGIN"
-        BUILD_WITH_INSTALL_RPATH TRUE
-    )
-endif()
-
-# 安装目标文件 - 直接安装到根目录
-install(TARGETS ${PROJECT_NAME} DESTINATION .)
-
-# 安装依赖的动态库
-if(APPLE OR UNIX)
-# 安装CPR库
-# 使用生成器表达式获取CPR库的位置
-set(CPR_LIBRARY $<TARGET_FILE:cpr::cpr>)
-install(FILES ${CPR_LIBRARY} DESTINATION .)
-
-# 在Linux上，创建libcpr.so.1符号链接
-if(UNIX AND NOT APPLE)
-    install(CODE "
-        execute_process(
-            COMMAND ${CMAKE_COMMAND} -E create_symlink 
-            libcpr.so 
-            \${CMAKE_INSTALL_PREFIX}/libcpr.so.1
-        )
-    ")
-endif()
-
-# 安装CURL库
-# 使用生成器表达式获取CURL库的位置
-set(CURL_LIBRARY $<TARGET_FILE:CURL::libcurl>)
-install(FILES ${CURL_LIBRARY} DESTINATION .)
-    
-    # 安装ZLIB库（如果需要）
-    find_package(ZLIB)
-    if(ZLIB_FOUND)
-        if(UNIX AND NOT APPLE)
-            # 在Linux上，尝试安装ZLIB库及其符号链接
-            find_library(ZLIB_LIBRARY_PATH NAMES z)
-            if(ZLIB_LIBRARY_PATH)
-                install(FILES ${ZLIB_LIBRARY_PATH} DESTINATION .)
-                get_filename_component(ZLIB_LIBRARY_DIR ${ZLIB_LIBRARY_PATH} DIRECTORY)
-                file(GLOB ZLIB_SYMLINKS "${ZLIB_LIBRARY_DIR}/libz.so*")
-                foreach(SYMLINK ${ZLIB_SYMLINKS})
-                    install(FILES ${SYMLINK} DESTINATION .)
-                endforeach()
-            endif()
-        else()
-            # 在macOS上，使用ZLIB_LIBRARIES变量获取ZLIB库的路径
-            foreach(LIB ${ZLIB_LIBRARIES})
-                if(EXISTS "${LIB}")
-                    install(FILES "${LIB}" DESTINATION .)
-                endif()
-            endforeach()
-        endif()
-    endif()
-endif()
+## 设置RPATH，使Python扩展模块能够找到依赖的动态库
+#if(APPLE)
+#    # 在macOS上，设置RPATH为@loader_path，这样扩展模块可以在同一目录中查找动态库
+#    set_target_properties(${PROJECT_NAME} PROPERTIES
+#        INSTALL_RPATH "@loader_path"
+#        BUILD_WITH_INSTALL_RPATH TRUE
+#    )
+#elseif(UNIX AND NOT APPLE)
+#    # 在Linux上，设置RPATH为$ORIGIN，这样扩展模块可以在同一目录中查找动态库
+#    set_target_properties(${PROJECT_NAME} PROPERTIES
+#        INSTALL_RPATH "$ORIGIN"
+#        BUILD_WITH_INSTALL_RPATH TRUE
+#    )
+#endif()
+#
+## 安装目标文件 - 直接安装到根目录
+#install(TARGETS ${PROJECT_NAME} DESTINATION .)
+#
+## 安装依赖的动态库
+#if(APPLE OR UNIX)
+## 安装CPR库
+## 使用生成器表达式获取CPR库的位置
+#set(CPR_LIBRARY $<TARGET_FILE:cpr::cpr>)
+#install(FILES ${CPR_LIBRARY} DESTINATION .)
+#
+## 在Linux上，创建libcpr.so.1符号链接
+#if(UNIX AND NOT APPLE)
+#    install(CODE "
+#        execute_process(
+#            COMMAND ${CMAKE_COMMAND} -E create_symlink
+#            libcpr.so
+#            \${CMAKE_INSTALL_PREFIX}/libcpr.so.1
+#        )
+#    ")
+#endif()
+#
+## 安装CURL库
+## 使用生成器表达式获取CURL库的位置
+#set(CURL_LIBRARY $<TARGET_FILE:CURL::libcurl>)
+#install(FILES ${CURL_LIBRARY} DESTINATION .)
+#
+#    # 安装ZLIB库（如果需要）
+#    find_package(ZLIB)
+#    if(ZLIB_FOUND)
+#        if(UNIX AND NOT APPLE)
+#            # 在Linux上，尝试安装ZLIB库及其符号链接
+#            find_library(ZLIB_LIBRARY_PATH NAMES z)
+#            if(ZLIB_LIBRARY_PATH)
+#                install(FILES ${ZLIB_LIBRARY_PATH} DESTINATION .)
+#                get_filename_component(ZLIB_LIBRARY_DIR ${ZLIB_LIBRARY_PATH} DIRECTORY)
+#                file(GLOB ZLIB_SYMLINKS "${ZLIB_LIBRARY_DIR}/libz.so*")
+#                foreach(SYMLINK ${ZLIB_SYMLINKS})
+#                    install(FILES ${SYMLINK} DESTINATION .)
+#                endforeach()
+#            endif()
+#        else()
+#            # 在macOS上，使用ZLIB_LIBRARIES变量获取ZLIB库的路径
+#            foreach(LIB ${ZLIB_LIBRARIES})
+#                if(EXISTS "${LIB}")
+#                    install(FILES "${LIB}" DESTINATION .)
+#                endif()
+#            endforeach()
+#        endif()
+#    endif()
+#endif()
 
 # 添加测试
 if(BUILD_TESTING)
