@@ -137,7 +137,14 @@ namespace twitter_dm {
          * @param proxy_url 代理服务器URL（可选，格式：http://host:port 或 socks5://host:port）
          * @throws std::invalid_argument 当cookies格式无效时抛出异常
          */
-        explicit Twitter(std::string cookies, std::string proxy_url = "");
+        /**
+         * @brief 构造函数
+         * @param cookies 账号cookies字符串
+         * @param proxy_url 代理服务器URL（可选，格式：http://host:port 或 socks5://host:port）
+         * @param logger_name 日志记录器名称（可选，默认为 "twitter_dm"）
+         * @throws std::invalid_argument 当cookies格式无效时抛出异常
+         */
+        explicit Twitter(std::string cookies, std::string proxy_url = "", const std::string& logger_name = "twitter_dm");
 
         /**
          * @brief 析构函数

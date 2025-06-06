@@ -17,10 +17,10 @@ namespace twitter_dm {
 
     static constexpr int REQUEST_TIMEOUT_MS = 30000; // 请求超时时间（毫秒）
 
-    Twitter::Twitter(std::string cookies, std::string proxy_url)
+    Twitter::Twitter(std::string cookies, std::string proxy_url, const std::string& logger_name)
         : cookies_(std::move(cookies)), proxy_url_(std::move(proxy_url)) {
         // 初始化日志记录器
-        logger_ = spdlog::stdout_color_mt("twitter_dm");
+        logger_ = spdlog::stdout_color_mt(logger_name);
         logger_->set_level(spdlog::level::info);
 
         // 验证cookies格式

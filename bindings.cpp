@@ -66,9 +66,10 @@ PYBIND11_MODULE(twitter_dm, m) {
     py::class_<twitter_dm::Twitter>(m, "Twitter")
             // 绑定构造函数，允许Python通过 Twitter(cookies, proxy_url) 创建对象
             // py::arg用于为Python中的参数命名，并可以提供默认值
-            .def(py::init<std::string, std::string>(),
+            .def(py::init<std::string, std::string, std::string>(),
                  py::arg("cookies"),
-                 py::arg("proxy_url") = "", "Twitter账号的cookies和可选的代理URL")
+                 py::arg("proxy_url") = "",
+                 py::arg("logger_name") = "twitter_dm", "Twitter账号的cookies、可选的代理URL和可选的日志记录器名称")
             // 绑定类的成员函数
             // &twitter_dm::Twitter::sendDirectMessage 是指向成员函数的指针
             .def("send_direct_message", &twitter_dm::Twitter::sendDirectMessage,
