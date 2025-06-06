@@ -320,7 +320,7 @@ if __name__ == "__main__":
         long_description=get_long_description(),
         long_description_content_type="text/markdown",
         url=project_info.get("urls", {}).get("Homepage", ""),
-        license="MIT",
+        license=project_info.get("license", {}).get("text", ""),
 
         # 不再包含Python包
         # packages=["twitter_dm"],
